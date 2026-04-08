@@ -1,0 +1,306 @@
+Build a complete full-stack AI content intelligence app called Recall.ai — 'Understand more. Read less.'
+Tech Stack
+
+Frontend Web: React + TypeScript + Tailwind CSS + Framer Motion
+Mobile: React Native + Expo
+Backend: FastAPI (Python)
+Database: Supabase (PostgreSQL + Auth)
+AI: Anthropic Claude API (claude-haiku for free tier, claude-sonnet for pro)
+Email: Resend API
+Payments: Razorpay
+Scraping: Jina Reader API (https://r.jina.ai/{url}) as primary, BeautifulSoup as fallback
+YouTube: YouTube Data API v3
+TTS: Google Cloud TTS API
+
+Core Concept
+Users paste any URL (article, YouTube video, podcast, PDF, DOCX, TXT) → Recall fetches the content → Claude AI generates a verdict (is it worth your time?) + dynamic bullet points (3-10 based on content depth) → user can ask questions about the content → save to personal library → build a second brain over time.
+Authentication
+
+Supabase Auth with email/password
+Google OAuth login
+Each user has completely private library
+JWT tokens for all API calls
+Onboarding flow for first-time users (4 steps: welcome, demo, extension, language preference)
+
+Backend API Endpoints
+Summarisation
+
+POST /api/summarize — accepts {url} or multipart file upload (PDF/DOCX/TXT), detects YouTube URLs and uses YouTube Data API, uses Jina Reader for all other URLs, calls Claude to generate verdict + bullets, returns {title, verdict, bullets, articleText, language, credibility_score}
+POST /api/suggest-questions — accepts {title, verdict, bullets}, returns 3 suggested follow-up questions
+POST /api/audio-brief — accepts {title, verdict, bullets}, generates conversational script between Aria and Ravi discussing the content
+POST /api/tts — accepts {text, language_code}, uses Google Cloud TTS, auto-detects language with langdetect, returns base64 audio
+
+Library
+
+GET /api/saved — list user's saved articles with pagination
+POST /api/saved — save an article with all fields
+DELETE /api/saved/:id — delete saved article
+PUT /api/saved/:id/collection — assign to collection
+POST /api/saved/:id/share — generate public share token
+GET /api/share/:token — public endpoint, no auth required
+
+Ask AI
+
+POST /api/saved/ask — accepts {question}, fetches all user's saved articles, answers using Claude with citations
+POST /api/rabbit-hole — accepts {title, verdict, bullets}, suggests 5 related articles to read next
+
+Collections
+
+GET /api/collections — list user's collections
+POST /api/collections — create collection with name + color
+DELETE /api/collections/:id — delete collection
+
+Highlights
+
+GET /api/highlights — list user's highlights
+POST /api/highlights — save a bullet as highlight
+DELETE /api/highlights/:id
+
+Digest & Reports
+
+GET /api/digest/preview — returns 3 most recent saves formatted for email
+POST /api/digest/send — sends daily digest email via Resend
+GET /api/report/weekly — generates weekly reading report with themes, top saves, patterns
+
+Insights
+
+GET /api/insights/reading-dna — topic breakdown + reading patterns for last 30 days
+GET /api/mentor/recommendations — 3 knowledge gaps + suggested reads based on reading history
+GET /api/review/due — articles due for spaced repetition review
+POST /api/review/:id/complete — mark article reviewed
+
+Payments
+
+POST /api/payment/create-order — creates Razorpay order for ₹499/mo
+POST /api/payment/verify — verifies payment, upgrades user to pro in Supabase
+
+Developer API
+
+POST /api/developer/keys — generate API key
+GET /api/v1/saved — public API with API key auth
+POST /api/v1/save — public API save endpoint
+
+Sharing
+
+POST /api/saved/:id/share — generate unique public share link
+GET /api/share/:token — public shareable summary page
+
+Web App — All Pages
+Home Page (/)
+
+Animated hero: 'Understand more. Read less.'
+URL input with paste button, microphone button (voice save), file upload button (paperclip)
+Large Summarise button
+After summarising: show title, verdict in highlighted box with ⚡ icon, numbered bullets, suggested questions as clickable chips, Read Aloud button, Audio Brief button, Save button, Share button
+Show last 3 recent saves below
+
+Saved Articles Page (/saved)
+
+Collections filter bar (horizontal chips: All + user collections with colors)
+Daily Digest slide-in panel from right (triggered by Digest button in nav)
+Ask your library box with microphone button + Ask button
+Search bar with fuzzy search across titles, verdicts, bullets
+Article cards: expandable, show verdict + bullets + action buttons (Read Aloud, Audio Brief, Share, Add to Collection, Delete, Highlight bullets)
+Swipe to delete on mobile
+
+Highlights Page (/highlights)
+
+All saved bullet highlights grouped by article
+Each highlight shows the bullet text + source article title
+
+Insights Page (/insights)
+
+Reading DNA: donut chart (recharts) showing topic breakdown
+AI Mentor: 3 knowledge gap cards with suggested reads
+Spaced repetition: articles due for review today
+Reading streak counter
+
+Knowledge Graph Page (/graph)
+
+D3.js force-directed graph of all saved articles
+Nodes colored by topic, sized by recency
+Click node to see article summary panel
+Edges show connections between related articles
+
+Creators Page (/create)
+
+Select topic from collections or type custom
+Generate: content calendar, blog outlines, tweet threads
+Download as CSV, copy individual items
+
+Public Share Page (/share/:token)
+
+Shows shared article beautifully — title, verdict, bullets
+Recall.ai branding
+'Save to your Recall' CTA for non-logged-in users
+
+Public Profile Page (/profile/:username)
+
+User's public reading list
+Collections they've made public
+'Try Recall' CTA
+
+Settings Page (/settings)
+
+Profile: username, preferred language selector
+Plan: current plan, usage this month, upgrade button
+API Keys: generate/view/regenerate developer API key
+Integrations: Link WhatsApp, Link Telegram, Siri Shortcuts, Google Assistant
+Danger zone: delete account
+
+Navigation Bar
+Links: Saved | Highlights | Insights | Graph | Create | Import | Settings | Digest (slide panel) | Dark mode toggle | Sign out
+Mobile: collapses to hamburger menu with slide-out drawer
+Mobile App (React Native + Expo)
+Design System
+
+Primary: #4F46E5
+Background: #F9FAFB
+Cards: #FFFFFF with shadow
+Text: #111827 primary, #6B7280 secondary
+Border radius: 12px cards, 8px buttons
+Font sizes: 28px hero, 20px headers, 16px titles, 14px body, 12px meta
+Padding: 16px screen, 16px card
+
+Bottom Tab Navigation (5 tabs)
+🏠 Home | 📚 Library | ✨ Highlights | 📊 Insights | ⚙️ Settings
+Home Screen
+
+SafeAreaView, white background
+Top bar: Recall.ai logo left, notification bell right
+Hero text: 'What do you want to understand today?' 28px bold
+URL input: full width, 56px height, paste icon + mic icon inside
+Summarise button: full width purple 56px
+Usage progress bar: 18/50 saves subtle
+'Recent Saves' section header with 'See all'
+Horizontal scrollable preview cards of last 3 saves
+After summarising: show result card with verdict + bullets + action icons
+
+Library Screen
+
+Search bar pinned at top
+Horizontal collection chips
+Ask your library input + Ask AI button
+Pull to refresh
+Vertical list of expandable article cards
+Swipe left to delete
+
+Article Cards (Mobile)
+
+Favicon + domain + time ago
+Recall Score colored pill (green 8-10, yellow 5-7, red 1-4)
+Title bold 16px
+Verdict: purple left border, italic gray
+Numbered bullets full text
+Action icon row: 🔊 🎧 💾 🔗 🗑️ ➕
+Skeleton shimmer loading state
+
+Highlights Screen
+
+Grouped by article
+Quote style display
+
+Insights Screen
+
+Reading DNA donut chart
+Knowledge gap cards
+Reading streak with flame emoji
+
+Settings Screen
+
+Profile section
+Plan + usage
+Language preference
+Dark mode toggle
+Sign out
+
+Key Features
+Multilingual
+
+Auto-detect content language
+Summaries generated in user's preferred language
+Google TTS reads in the correct language
+Support: English, Hindi, Tamil, Telugu, Malayalam, Kannada, Bengali
+
+Recall Score
+
+1-10 score for every article based on depth, relevance to user's history, originality
+Colored badge on every card
+Sort by Recall Score option
+
+Source Credibility
+
+Credibility score 1-10 per article
+Green/yellow/red shield badge
+Breakdown: source reputation, claim verifiability, bias indicators, sensationalism
+
+Contradiction Detector
+
+Auto-checks new saves against existing library
+Flags contradictions with yellow warning banner
+Side-by-side comparison modal
+
+Spaced Repetition
+
+Review intervals: 1, 3, 7, 14, 30, 90 days
+Due articles shown in Insights
+Remember/Forgot buttons
+Daily email reminder
+
+Chrome Extension
+
+Right-click any link → Save to Recall
+Extension popup: login form, current page URL, Save button, last 5 saves
+Detects Instagram/Twitter/LinkedIn/YouTube — shows Summarise this post button
+
+Share System
+
+Each saved article gets a unique public share link
+Beautiful public page with Recall branding
+Copy link button on every article card
+
+Daily Digest
+
+Slide-in panel from right in web app
+Shows 3 most recent saves with verdict + 2 bullets
+Send me today's digest button → email via Resend
+Weekly report section with Generate button
+
+Payments (Razorpay)
+
+Free: 50 saves/month, Llama model, basic features
+Pro ₹499/mo: unlimited saves, Claude Haiku, all features
+Usage counter shown in app
+Upgrade modal when free limit hit
+Monthly save count resets on 1st of month
+
+Environment Variables Needed
+
+ANTHROPIC_API_KEY
+SUPABASE_URL
+SUPABASE_KEY
+YOUTUBE_API_KEY
+GOOGLE_TTS_KEY
+RESEND_API_KEY
+RAZORPAY_KEY_ID
+RAZORPAY_KEY_SECRET
+GROQ_API_KEY (for free tier Llama model)
+
+Database Schema (Supabase)
+Tables needed:
+
+users (id, email, username, plan, monthly_saves_count, saves_limit, preferred_language, referral_code, onboarding_completed, created_at)
+saved_articles (id, user_id, url, title, verdict, bullets jsonb, article_text, language, recall_score, credibility_score, credibility_verdict, collection_id, share_token, is_public, last_reviewed_at, review_count, created_at)
+collections (id, user_id, name, color, created_at)
+highlights (id, user_id, article_id, bullet_text, note, created_at)
+api_keys (id, user_id, key_hash, name, created_at, last_used_at, is_active)
+
+Quality Requirements
+
+Zero placeholder or mock data anywhere
+All API calls have proper error handling and user-facing error messages
+Loading states on every async operation
+Empty states on every list
+Mobile responsive web app
+Dark mode with localStorage persistence
+All features work end-to-end, not just UI shells"

@@ -3,20 +3,37 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Recall.ai API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: summarize
+    description: Content summarization
+  - name: library
+    description: Saved articles library
+  - name: collections
+    description: Article collections
+  - name: highlights
+    description: Saved highlights
+  - name: insights
+    description: Reading insights and analytics
+  - name: digest
+    description: Daily digest
+  - name: auth
+    description: Authentication
+  - name: payments
+    description: Payment operations
+  - name: share
+    description: Public sharing
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,7 +41,703 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/profile:
+    patch:
+      operationId: updateProfile
+      tags: [auth]
+      summary: Update user profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileBody"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /summarize:
+    post:
+      operationId: summarize
+      tags: [summarize]
+      summary: Summarize a URL or uploaded content
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SummarizeBody"
+      responses:
+        "200":
+          description: Summary generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SummaryResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Usage limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /summarize/suggest-questions:
+    post:
+      operationId: suggestQuestions
+      tags: [summarize]
+      summary: Suggest follow-up questions for a summary
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuggestQuestionsBody"
+      responses:
+        "200":
+          description: Questions suggested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestQuestionsResponse"
+
+  /summarize/ask:
+    post:
+      operationId: askAboutContent
+      tags: [summarize]
+      summary: Ask a question about specific content
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AskAboutContentBody"
+      responses:
+        "200":
+          description: Answer provided
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AskResponse"
+
+  /saved:
+    get:
+      operationId: getSavedArticles
+      tags: [library]
+      summary: List saved articles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: collection_id
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [created_at, recall_score, credibility_score, title]
+            default: created_at
+      responses:
+        "200":
+          description: List of saved articles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedArticlesResponse"
+    post:
+      operationId: saveArticle
+      tags: [library]
+      summary: Save an article to library
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveArticleBody"
+      responses:
+        "201":
+          description: Article saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedArticle"
+
+  /saved/{id}:
+    get:
+      operationId: getSavedArticle
+      tags: [library]
+      summary: Get a saved article by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Saved article
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedArticle"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteSavedArticle
+      tags: [library]
+      summary: Delete a saved article
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /saved/{id}/collection:
+    put:
+      operationId: updateArticleCollection
+      tags: [library]
+      summary: Assign article to a collection
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCollectionBody"
+      responses:
+        "200":
+          description: Collection updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedArticle"
+
+  /saved/{id}/share:
+    post:
+      operationId: shareArticle
+      tags: [library]
+      summary: Generate a public share link for an article
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Share token generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareResponse"
+
+  /saved/ask:
+    post:
+      operationId: askLibrary
+      tags: [library]
+      summary: Ask a question across your entire library
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AskLibraryBody"
+      responses:
+        "200":
+          description: Answer with citations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AskResponse"
+
+  /saved/rabbit-hole:
+    post:
+      operationId: getRabbitHole
+      tags: [library]
+      summary: Get related article suggestions
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RabbitHoleBody"
+      responses:
+        "200":
+          description: Related articles list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RabbitHoleResponse"
+
+  /saved/stats:
+    get:
+      operationId: getLibraryStats
+      tags: [library]
+      summary: Get library statistics summary
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Library statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryStats"
+
+  /share/{token}:
+    get:
+      operationId: getSharedArticle
+      tags: [share]
+      summary: Get a publicly shared article by token
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Shared article
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedArticle"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /collections:
+    get:
+      operationId: getCollections
+      tags: [collections]
+      summary: List user collections
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of collections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Collection"
+    post:
+      operationId: createCollection
+      tags: [collections]
+      summary: Create a new collection
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCollectionBody"
+      responses:
+        "201":
+          description: Collection created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+
+  /collections/{id}:
+    delete:
+      operationId: deleteCollection
+      tags: [collections]
+      summary: Delete a collection
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /highlights:
+    get:
+      operationId: getHighlights
+      tags: [highlights]
+      summary: List user highlights
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of highlights
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Highlight"
+    post:
+      operationId: createHighlight
+      tags: [highlights]
+      summary: Save a bullet as a highlight
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHighlightBody"
+      responses:
+        "201":
+          description: Highlight saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Highlight"
+
+  /highlights/{id}:
+    delete:
+      operationId: deleteHighlight
+      tags: [highlights]
+      summary: Delete a highlight
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /insights/reading-dna:
+    get:
+      operationId: getReadingDna
+      tags: [insights]
+      summary: Get topic breakdown and reading patterns
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Reading DNA data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadingDna"
+
+  /insights/streak:
+    get:
+      operationId: getReadingStreak
+      tags: [insights]
+      summary: Get reading streak info
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Reading streak
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadingStreak"
+
+  /mentor/recommendations:
+    get:
+      operationId: getMentorRecommendations
+      tags: [insights]
+      summary: Get AI mentor recommendations and knowledge gaps
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Recommendations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorRecommendations"
+
+  /review/due:
+    get:
+      operationId: getDueReviews
+      tags: [insights]
+      summary: Get articles due for spaced repetition review
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Articles due for review
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SavedArticle"
+
+  /review/{id}/complete:
+    post:
+      operationId: completeReview
+      tags: [insights]
+      summary: Mark an article as reviewed
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteReviewBody"
+      responses:
+        "200":
+          description: Review completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedArticle"
+
+  /digest/preview:
+    get:
+      operationId: getDigestPreview
+      tags: [digest]
+      summary: Get digest preview (3 most recent saves)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Digest preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DigestPreview"
+
+  /digest/send:
+    post:
+      operationId: sendDigest
+      tags: [digest]
+      summary: Send daily digest email
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Digest sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /report/weekly:
+    get:
+      operationId: getWeeklyReport
+      tags: [digest]
+      summary: Generate weekly reading report
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Weekly report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyReport"
+
+  /payment/create-order:
+    post:
+      operationId: createPaymentOrder
+      tags: [payments]
+      summary: Create a Razorpay payment order
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Payment order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentOrder"
+
+  /payment/verify:
+    post:
+      operationId: verifyPayment
+      tags: [payments]
+      summary: Verify a payment and upgrade user to pro
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyPaymentBody"
+      responses:
+        "200":
+          description: Payment verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +747,656 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        username:
+          type: ["string", "null"]
+        plan:
+          type: string
+          enum: [free, pro]
+        monthlySavesCount:
+          type: integer
+        savesLimit:
+          type: integer
+        preferredLanguage:
+          type: string
+        onboardingCompleted:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - email
+        - plan
+        - monthlySavesCount
+        - savesLimit
+        - preferredLanguage
+        - onboardingCompleted
+        - createdAt
+
+    RegisterBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        username:
+          type: ["string", "null"]
+      required:
+        - email
+        - password
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+
+    UpdateProfileBody:
+      type: object
+      properties:
+        username:
+          type: ["string", "null"]
+        preferredLanguage:
+          type: ["string", "null"]
+        onboardingCompleted:
+          type: ["boolean", "null"]
+
+    SummarizeBody:
+      type: object
+      properties:
+        url:
+          type: ["string", "null"]
+        preferredLanguage:
+          type: ["string", "null"]
+      required: []
+
+    SummaryResult:
+      type: object
+      properties:
+        title:
+          type: string
+        verdict:
+          type: string
+        bullets:
+          type: array
+          items:
+            type: string
+        articleText:
+          type: ["string", "null"]
+        language:
+          type: string
+        recallScore:
+          type: number
+        credibilityScore:
+          type: number
+        credibilityVerdict:
+          type: ["string", "null"]
+        url:
+          type: ["string", "null"]
+        sourceType:
+          type: string
+          enum: [url, youtube, pdf, docx, txt]
+      required:
+        - title
+        - verdict
+        - bullets
+        - language
+        - recallScore
+        - credibilityScore
+        - sourceType
+
+    SuggestQuestionsBody:
+      type: object
+      properties:
+        title:
+          type: string
+        verdict:
+          type: string
+        bullets:
+          type: array
+          items:
+            type: string
+      required:
+        - title
+        - verdict
+        - bullets
+
+    SuggestQuestionsResponse:
+      type: object
+      properties:
+        questions:
+          type: array
+          items:
+            type: string
+      required:
+        - questions
+
+    AskAboutContentBody:
+      type: object
+      properties:
+        question:
+          type: string
+        title:
+          type: string
+        verdict:
+          type: string
+        bullets:
+          type: array
+          items:
+            type: string
+        articleText:
+          type: ["string", "null"]
+      required:
+        - question
+        - title
+        - verdict
+        - bullets
+
+    AskLibraryBody:
+      type: object
+      properties:
+        question:
+          type: string
+      required:
+        - question
+
+    AskResponse:
+      type: object
+      properties:
+        answer:
+          type: string
+        citations:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              id:
+                type: ["integer", "null"]
+            required:
+              - title
+      required:
+        - answer
+        - citations
+
+    RabbitHoleBody:
+      type: object
+      properties:
+        title:
+          type: string
+        verdict:
+          type: string
+        bullets:
+          type: array
+          items:
+            type: string
+      required:
+        - title
+        - verdict
+        - bullets
+
+    RabbitHoleResponse:
+      type: object
+      properties:
+        suggestions:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              description:
+                type: string
+              searchQuery:
+                type: string
+            required:
+              - title
+              - description
+              - searchQuery
+      required:
+        - suggestions
+
+    SavedArticle:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        url:
+          type: ["string", "null"]
+        title:
+          type: string
+        verdict:
+          type: string
+        bullets:
+          type: array
+          items:
+            type: string
+        articleText:
+          type: ["string", "null"]
+        language:
+          type: string
+        recallScore:
+          type: number
+        credibilityScore:
+          type: number
+        credibilityVerdict:
+          type: ["string", "null"]
+        collectionId:
+          type: ["integer", "null"]
+        shareToken:
+          type: ["string", "null"]
+        isPublic:
+          type: boolean
+        lastReviewedAt:
+          type: ["string", "null"]
+          format: date-time
+        reviewCount:
+          type: integer
+        sourceType:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - title
+        - verdict
+        - bullets
+        - language
+        - recallScore
+        - credibilityScore
+        - isPublic
+        - reviewCount
+        - sourceType
+        - createdAt
+
+    SavedArticlesResponse:
+      type: object
+      properties:
+        articles:
+          type: array
+          items:
+            $ref: "#/components/schemas/SavedArticle"
+        total:
+          type: integer
+        page:
+          type: integer
+        totalPages:
+          type: integer
+      required:
+        - articles
+        - total
+        - page
+        - totalPages
+
+    SaveArticleBody:
+      type: object
+      properties:
+        url:
+          type: ["string", "null"]
+        title:
+          type: string
+        verdict:
+          type: string
+        bullets:
+          type: array
+          items:
+            type: string
+        articleText:
+          type: ["string", "null"]
+        language:
+          type: string
+        recallScore:
+          type: number
+        credibilityScore:
+          type: number
+        credibilityVerdict:
+          type: ["string", "null"]
+        collectionId:
+          type: ["integer", "null"]
+        sourceType:
+          type: string
+      required:
+        - title
+        - verdict
+        - bullets
+        - language
+        - recallScore
+        - credibilityScore
+        - sourceType
+
+    UpdateCollectionBody:
+      type: object
+      properties:
+        collectionId:
+          type: ["integer", "null"]
+      required: []
+
+    ShareResponse:
+      type: object
+      properties:
+        shareToken:
+          type: string
+        shareUrl:
+          type: string
+      required:
+        - shareToken
+        - shareUrl
+
+    LibraryStats:
+      type: object
+      properties:
+        totalSaves:
+          type: integer
+        monthlySaves:
+          type: integer
+        savesLimit:
+          type: integer
+        avgRecallScore:
+          type: number
+        avgCredibilityScore:
+          type: number
+        topTopics:
+          type: array
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              count:
+                type: integer
+            required:
+              - topic
+              - count
+        recentSaves:
+          type: array
+          items:
+            $ref: "#/components/schemas/SavedArticle"
+      required:
+        - totalSaves
+        - monthlySaves
+        - savesLimit
+        - avgRecallScore
+        - avgCredibilityScore
+        - topTopics
+        - recentSaves
+
+    Collection:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        name:
+          type: string
+        color:
+          type: string
+        articleCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - name
+        - color
+        - articleCount
+        - createdAt
+
+    CreateCollectionBody:
+      type: object
+      properties:
+        name:
+          type: string
+        color:
+          type: string
+      required:
+        - name
+        - color
+
+    Highlight:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        articleId:
+          type: integer
+        bulletText:
+          type: string
+        note:
+          type: ["string", "null"]
+        articleTitle:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - articleId
+        - bulletText
+        - createdAt
+
+    CreateHighlightBody:
+      type: object
+      properties:
+        articleId:
+          type: integer
+        bulletText:
+          type: string
+        note:
+          type: ["string", "null"]
+      required:
+        - articleId
+        - bulletText
+
+    TopicBreakdown:
+      type: object
+      properties:
+        topic:
+          type: string
+        count:
+          type: integer
+        percentage:
+          type: number
+      required:
+        - topic
+        - count
+        - percentage
+
+    ReadingDna:
+      type: object
+      properties:
+        topicBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopicBreakdown"
+        totalArticles:
+          type: integer
+        avgSessionLength:
+          type: number
+        mostActiveDay:
+          type: string
+        preferredContentType:
+          type: string
+      required:
+        - topicBreakdown
+        - totalArticles
+        - avgSessionLength
+        - mostActiveDay
+        - preferredContentType
+
+    ReadingStreak:
+      type: object
+      properties:
+        currentStreak:
+          type: integer
+        longestStreak:
+          type: integer
+        totalDaysRead:
+          type: integer
+        lastReadAt:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - currentStreak
+        - longestStreak
+        - totalDaysRead
+
+    MentorRecommendations:
+      type: object
+      properties:
+        knowledgeGaps:
+          type: array
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+              description:
+                type: string
+              suggestedReads:
+                type: array
+                items:
+                  type: string
+            required:
+              - topic
+              - description
+              - suggestedReads
+        insights:
+          type: string
+      required:
+        - knowledgeGaps
+        - insights
+
+    CompleteReviewBody:
+      type: object
+      properties:
+        remembered:
+          type: boolean
+      required:
+        - remembered
+
+    DigestPreview:
+      type: object
+      properties:
+        articles:
+          type: array
+          items:
+            $ref: "#/components/schemas/SavedArticle"
+        generatedAt:
+          type: string
+          format: date-time
+      required:
+        - articles
+        - generatedAt
+
+    WeeklyReport:
+      type: object
+      properties:
+        weekStart:
+          type: string
+          format: date-time
+        weekEnd:
+          type: string
+          format: date-time
+        totalSaves:
+          type: integer
+        topThemes:
+          type: array
+          items:
+            type: string
+        topSaves:
+          type: array
+          items:
+            $ref: "#/components/schemas/SavedArticle"
+        insights:
+          type: string
+      required:
+        - weekStart
+        - weekEnd
+        - totalSaves
+        - topThemes
+        - topSaves
+        - insights
+
+    PaymentOrder:
+      type: object
+      properties:
+        orderId:
+          type: string
+        amount:
+          type: integer
+        currency:
+          type: string
+        keyId:
+          type: string
+      required:
+        - orderId
+        - amount
+        - currency
+        - keyId
+
+    VerifyPaymentBody:
+      type: object
+      properties:
+        orderId:
+          type: string
+        paymentId:
+          type: string
+        signature:
+          type: string
+      required:
+        - orderId
+        - paymentId
+        - signature

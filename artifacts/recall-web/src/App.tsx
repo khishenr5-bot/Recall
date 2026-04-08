@@ -1,0 +1,68 @@
+import { Switch, Route, Router as WouterRouter } from "wouter";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/lib/auth";
+import { Layout } from "@/components/layout";
+import { ProtectedRoute } from "@/components/protected-route";
+
+import NotFound from "@/pages/not-found";
+import Home from "@/pages/home";
+import Login from "@/pages/login";
+import Register from "@/pages/register";
+import Saved from "@/pages/saved";
+import Highlights from "@/pages/highlights";
+import Insights from "@/pages/insights";
+import Graph from "@/pages/graph";
+import Create from "@/pages/create";
+import Share from "@/pages/share";
+import Settings from "@/pages/settings";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/" component={() => <Layout><Home /></Layout>} />
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      <Route path="/share/:token" component={(params) => <Layout><Share token={params.params.token} /></Layout>} />
+      
+      <Route path="/saved" component={() => <ProtectedRoute><Layout><Saved /></Layout></ProtectedRoute>} />
+      <Route path="/highlights" component={() => <ProtectedRoute><Layout><Highlights /></Layout></ProtectedRoute>} />
+      <Route path="/insights" component={() => <ProtectedRoute><Layout><Insights /></Layout></ProtectedRoute>} />
+      <Route path="/graph" component={() => <ProtectedRoute><Layout><Graph /></Layout></ProtectedRoute>} />
+      <Route path="/create" component={() => <ProtectedRoute><Layout><Create /></Layout></ProtectedRoute>} />
+      <Route path="/settings" component={() => <ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
+      
+      <Route component={() => <Layout><NotFound /></Layout>} />
+    </Switch>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider defaultTheme="system" storageKey="recall-theme">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+            </WouterRouter>
+            <Toaster />
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+}
+
+export default App;
