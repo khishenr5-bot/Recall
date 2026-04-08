@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db, usersTable, savedArticlesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { requireAuth, type AuthRequest } from "../lib/auth";
+import { requireAuth, optionalAuth, type AuthRequest } from "../lib/auth";
 import { scrapeUrl } from "../lib/scraper";
 import {
   generateSummary,
@@ -20,11 +20,11 @@ import {
 
 const router = Router();
 
-router.post("/summarize", requireAuth, async (req, res): Promise<void> => {
-  const user = (req as AuthRequest).user;
+router.post("/summarize", optionalAuth, async (req, res): Promise<void> => {
+  const user = (req as AuthRequest).user ?? null;
 
-  // Check usage limit for free users
-  if (user.plan === "free" && user.monthlySavesCount >= user.savesLimit) {
+  // Check usage limit for free users (anonymous users can always summarize)
+  if (user && user.plan === "free" && user.monthlySavesCount >= user.savesLimit) {
     res.status(429).json({ error: `Monthly limit of ${user.savesLimit} saves reached. Upgrade to Pro for unlimited access.` });
     return;
   }
@@ -45,7 +45,8 @@ router.post("/summarize", requireAuth, async (req, res): Promise<void> => {
   req.log.info({ url }, "Summarizing URL");
 
   const scraped = await scrapeUrl(url);
-  const summary = await generateSummary(scraped.content, scraped.title, preferredLanguage ?? user.preferredLanguage);
+  const lang = preferredLanguage ?? user?.preferredLanguage ?? "en";
+  const summary = await generateSummary(scraped.content, scraped.title, lang);
 
   res.json({
     title: scraped.title,
@@ -61,7 +62,7 @@ router.post("/summarize", requireAuth, async (req, res): Promise<void> => {
   });
 });
 
-router.post("/summarize/suggest-questions", requireAuth, async (req, res): Promise<void> => {
+router.post("/summarize/suggest-questions", optionalAuth, async (req, res): Promise<void> => {
   const parsed = SuggestQuestionsBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -73,7 +74,7 @@ router.post("/summarize/suggest-questions", requireAuth, async (req, res): Promi
   res.json({ questions });
 });
 
-router.post("/summarize/ask", requireAuth, async (req, res): Promise<void> => {
+router.post("/summarize/ask", optionalAuth, async (req, res): Promise<void> => {
   const parsed = AskAboutContentBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -113,7 +114,7 @@ router.post("/saved/ask", requireAuth, async (req, res): Promise<void> => {
   res.json(result);
 });
 
-router.post("/saved/rabbit-hole", requireAuth, async (req, res): Promise<void> => {
+router.post("/saved/rabbit-hole", optionalAuth, async (req, res): Promise<void> => {
   const parsed = GetRabbitHoleBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

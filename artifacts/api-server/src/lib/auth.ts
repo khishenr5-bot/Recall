@@ -42,3 +42,18 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 }
 
 export type AuthRequest = Request & { user: typeof usersTable.$inferSelect };
+
+export async function optionalAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    const payload = verifyToken(token);
+    if (payload) {
+      const [user] = await db.select().from(usersTable).where(eq(usersTable.id, payload.userId));
+      if (user) {
+        (req as Request & { user: typeof user }).user = user;
+      }
+    }
+  }
+  next();
+}
