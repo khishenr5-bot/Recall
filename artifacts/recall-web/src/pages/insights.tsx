@@ -1,163 +1,131 @@
-import { 
-  useGetReadingDna, 
-  useGetReadingStreak, 
-  useGetMentorRecommendations, 
-  useGetDueReviews, 
-  useCompleteReview 
-} from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from "recharts";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useGetReadingDna, useGetReadingStreak, useGetMentorRecommendations, useGetDueReviews, useCompleteReview } from "@workspace/api-client-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { Flame, BrainCircuit, Library, CheckCircle2, ArrowRight } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetDueReviewsQueryKey } from "@workspace/api-client-react";
+import { Button } from "@/components/ui/button";
 
-const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+const COLORS = ['#a3a6ff', '#53ddfc', '#c180ff', '#6366f1', '#ff6b6b'];
 
 export default function Insights() {
-  const { data: dna, isLoading: loadingDna } = useGetReadingDna();
-  const { data: streak, isLoading: loadingStreak } = useGetReadingStreak();
-  const { data: mentor, isLoading: loadingMentor } = useGetMentorRecommendations();
-  const { data: dueReviews, isLoading: loadingReviews } = useGetDueReviews();
-  
+  const { data: dna } = useGetReadingDna();
+  const { data: streak } = useGetReadingStreak();
+  const { data: mentor } = useGetMentorRecommendations();
+  const { data: dueReviews } = useGetDueReviews();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   const completeReviewMutation = useCompleteReview({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetDueReviewsQueryKey() });
-        toast({ title: "Review logged", description: "Keep it up!" });
       }
     }
   });
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl space-y-8">
-      <div className="flex flex-col md:flex-row justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Insights & Mastery</h1>
+    <div className="container mx-auto px-4 py-10 max-w-5xl space-y-10">
+      <div className="flex flex-col md:flex-row justify-between gap-6 items-start md:items-end">
+        <div>
+          <h1 className="text-[3rem] font-bold tracking-tight leading-none text-white" style={{ fontFamily: "var(--app-font-display)" }}>Insights</h1>
+          <p className="text-[var(--on-surface-muted)] mt-3 text-lg">Analysis of your cognitive intake patterns.</p>
+        </div>
         
-        {loadingStreak ? <Skeleton className="h-12 w-48" /> : streak && (
-          <Card className="bg-primary/5 border-primary/20 flex-shrink-0">
-            <CardContent className="p-3 flex items-center gap-4">
-              <div className="bg-orange-500/10 p-2 rounded-full">
-                <Flame className="h-6 w-6 text-orange-500" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Current Streak</p>
-                <p className="text-2xl font-bold leading-none">{streak.currentStreak} Days</p>
-              </div>
-            </CardContent>
-          </Card>
+        {streak && (
+          <div className="bg-[var(--surface-high)] border border-[var(--outline-variant)] rounded-xl p-4 flex items-center gap-4 shadow-[0_16px_48px_rgba(163,166,255,0.06)]">
+            <div className="bg-[#ff6b6b]/10 p-3 rounded-full border border-[#ff6b6b]/20">
+              <Flame className="h-6 w-6 text-[#ff6b6b] drop-shadow-[0_0_8px_rgba(255,107,107,0.6)]" />
+            </div>
+            <div>
+              <p className="label-caps text-[var(--on-surface-muted)]">Active Sequence</p>
+              <p className="text-2xl font-bold leading-none mt-1">{streak.currentStreak} Cycles</p>
+            </div>
+          </div>
         )}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8">
-        <Card className="flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BrainCircuit className="h-5 w-5 text-primary" />
-              Your Reading DNA
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col items-center justify-center">
-            {loadingDna ? <Skeleton className="h-64 w-64 rounded-full" /> : dna && dna.topicBreakdown.length > 0 ? (
-              <div className="w-full h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={dna.topicBreakdown}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={2}
-                      dataKey="count"
-                      nameKey="topic"
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="bg-[var(--surface-high)] rounded-[0.5rem] p-8 flex flex-col">
+          <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2" style={{ fontFamily: "var(--app-font-display)" }}>
+            <BrainCircuit className="h-5 w-5 text-[var(--primary)]" />
+            Cognitive DNA
+          </h2>
+          <div className="flex-1 flex flex-col items-center justify-center min-h-[300px]">
+            {dna && dna.topicBreakdown.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={dna.topicBreakdown}
+                    cx="50%" cy="50%" innerRadius={80} outerRadius={120}
+                    paddingAngle={4} dataKey="count" nameKey="topic"
+                    stroke="none"
+                  >
+                    {dna.topicBreakdown.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip 
+                    contentStyle={{ backgroundColor: 'var(--surface-mid)', borderColor: 'var(--outline-variant)', borderRadius: '0.5rem', color: '#fff' }}
+                    itemStyle={{ color: '#fff' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-[var(--on-surface-muted)]">Insufficient data for sequence analysis.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-6 flex flex-col">
+          <div className="bg-[var(--surface-high)] rounded-[0.5rem] p-8 flex-1 border-t-2 border-t-[var(--secondary)]">
+            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2" style={{ fontFamily: "var(--app-font-display)" }}>
+              <Library className="h-5 w-5 text-[var(--secondary)]" />
+              Spaced Repetition Queue
+            </h2>
+            {dueReviews && dueReviews.length > 0 ? (
+              <div className="space-y-3">
+                {dueReviews.slice(0, 3).map(review => (
+                  <div key={review.id} className="p-4 bg-[var(--surface-mid)] rounded-lg border border-[var(--outline-variant)] flex justify-between items-center gap-4 hover:border-[var(--secondary)]/50 transition-colors">
+                    <p className="font-medium text-sm truncate flex-1 text-[var(--on-surface)]">{review.title}</p>
+                    <Button 
+                      size="sm" 
+                      className="bg-transparent border border-[#50fa7b]/50 text-[#50fa7b] hover:bg-[#50fa7b]/10"
+                      onClick={() => completeReviewMutation.mutate({ id: review.id, data: { remembered: true } })}
+                      disabled={completeReviewMutation.isPending}
                     >
-                      {dna.topicBreakdown.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip 
-                      contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '0.5rem' }}
-                      itemStyle={{ color: 'hsl(var(--foreground))' }}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                      <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Re-assimilated
+                    </Button>
+                  </div>
+                ))}
               </div>
             ) : (
-              <p className="text-muted-foreground py-12">Not enough data to analyze yet.</p>
+              <div className="flex items-center justify-center h-[120px] rounded-lg border border-dashed border-[var(--outline-variant)]">
+                <p className="text-[var(--on-surface-muted)]">Retention optimal. Queue empty.</p>
+              </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
 
-        <div className="space-y-8 flex flex-col">
-          <Card className="flex-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Library className="h-5 w-5 text-primary" />
-                Due for Review (Spaced Repetition)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loadingReviews ? <Skeleton className="h-32 w-full" /> : dueReviews && dueReviews.length > 0 ? (
-                <div className="space-y-4">
-                  {dueReviews.slice(0, 3).map(review => (
-                    <div key={review.id} className="p-3 bg-muted/30 rounded-lg border flex justify-between items-center gap-4">
-                      <div className="truncate">
-                        <p className="font-medium text-sm truncate">{review.title}</p>
-                      </div>
-                      <Button 
-                        size="sm" 
-                        variant="secondary"
-                        onClick={() => completeReviewMutation.mutate({ id: review.id, data: { remembered: true } })}
-                        disabled={completeReviewMutation.isPending}
-                      >
-                        <CheckCircle2 className="mr-1 h-4 w-4 text-green-500" />
-                        Reviewed
-                      </Button>
+          <div className="glass rounded-[0.5rem] p-8 border border-[var(--primary)]/30">
+            <h2 className="text-xl font-bold text-[var(--primary)] mb-4" style={{ fontFamily: "var(--app-font-display)" }}>AI Synthesis Engine</h2>
+            {mentor ? (
+              <div className="space-y-4">
+                <p className="text-sm leading-relaxed text-[var(--on-surface)]">{mentor.insights}</p>
+                {mentor.knowledgeGaps.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-[var(--outline-variant)]">
+                    <p className="label-caps text-[var(--on-surface-muted)] mb-3">Detected Voids</p>
+                    <div className="flex flex-wrap gap-2">
+                      {mentor.knowledgeGaps.map((gap, i) => (
+                        <span key={i} className="text-xs bg-[var(--surface-bright)] text-white px-3 py-1.5 rounded-full border border-[var(--outline-variant)] flex items-center">
+                          {gap.topic} <ArrowRight className="ml-1 h-3 w-3 text-[var(--primary)]" />
+                        </span>
+                      ))}
                     </div>
-                  ))}
-                  {dueReviews.length > 3 && (
-                    <p className="text-xs text-muted-foreground text-center">+{dueReviews.length - 3} more articles due</p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-muted-foreground py-8 text-center">You're all caught up!</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="flex-1 bg-accent/30">
-            <CardHeader>
-              <CardTitle className="text-lg">AI Mentor Insights</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loadingMentor ? <Skeleton className="h-24 w-full" /> : mentor ? (
-                <div className="space-y-4">
-                  <p className="text-sm leading-relaxed">{mentor.insights}</p>
-                  {mentor.knowledgeGaps.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-border/50">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Suggested Topics</p>
-                      <div className="flex flex-wrap gap-2">
-                        {mentor.knowledgeGaps.map((gap, i) => (
-                          <span key={i} className="text-xs bg-background px-2 py-1 rounded-md border shadow-sm flex items-center">
-                            {gap.topic} <ArrowRight className="ml-1 h-3 w-3 text-muted-foreground" />
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">Keep reading to get personalized mentor insights.</p>
-              )}
-            </CardContent>
-          </Card>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-[var(--on-surface-muted)]">Awaiting further intake to generate directives.</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

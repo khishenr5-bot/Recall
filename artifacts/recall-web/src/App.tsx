@@ -59,7 +59,7 @@ function Router() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="recall-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="recall-theme">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <TooltipProvider>

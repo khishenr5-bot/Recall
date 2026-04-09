@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Users, Plus, Link2, LogIn, Trash2, BookOpen, MessageSquare, Share2, Crown, Copy, Send } from "lucide-react";
+import { Link } from "wouter";
 
 async function apiFetch(path: string, options?: RequestInit) {
   const token = localStorage.getItem("recall_token");
@@ -39,7 +38,6 @@ interface SharedArticle {
 }
 
 export default function Teams() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,11 +93,11 @@ export default function Teams() {
       const res = await apiFetch("/api/teams", { method: "POST", body: JSON.stringify({ name: newTeamName }) });
       const data = await res.json();
       if (!res.ok) { toast({ title: data.error, variant: "destructive" }); return; }
-      toast({ title: `Team "${data.team.name}" created!` });
+      toast({ title: `Node "${data.team.name}" initialized` });
       setNewTeamName("");
       load();
     } catch {
-      toast({ title: "Failed to create team", variant: "destructive" });
+      toast({ title: "Failed to initialize", variant: "destructive" });
     } finally {
       setCreating(false);
     }
@@ -112,12 +110,12 @@ export default function Teams() {
     try {
       const res = await apiFetch(`/api/teams/join/${joinCode.trim().toUpperCase()}`, { method: "POST" });
       const data = await res.json();
-      if (!res.ok) { toast({ title: data.error || "Invalid code", variant: "destructive" }); return; }
-      toast({ title: `Joined "${data.team.name}"!` });
+      if (!res.ok) { toast({ title: data.error || "Invalid cipher", variant: "destructive" }); return; }
+      toast({ title: `Connection established to "${data.team.name}"` });
       setJoinCode("");
       load();
     } catch {
-      toast({ title: "Failed to join team", variant: "destructive" });
+      toast({ title: "Connection failed", variant: "destructive" });
     } finally {
       setJoining(false);
     }
@@ -128,7 +126,7 @@ export default function Teams() {
     const data = await res.json();
     setInviteCode(data.inviteCode);
     navigator.clipboard.writeText(data.inviteCode).catch(() => {});
-    toast({ title: "Invite code copied!", description: data.inviteCode });
+    toast({ title: "Cipher copied", description: data.inviteCode });
   };
 
   const handleAsk = async (e: React.FormEvent) => {
@@ -139,202 +137,190 @@ export default function Teams() {
     try {
       const res = await apiFetch(`/api/teams/${activeTeam.id}/ask`, { method: "POST", body: JSON.stringify({ question }) });
       const data = await res.json();
-      setAnswer(data.answer ?? "No answer found.");
+      setAnswer(data.answer ?? "No data found.");
     } catch {
-      toast({ title: "Failed to ask", variant: "destructive" });
+      toast({ title: "Query failed", variant: "destructive" });
     } finally {
       setAsking(false);
     }
   };
 
   const handleDisband = async (team: Team) => {
-    if (!confirm(`Disband "${team.name}"? This will remove all shared content.`)) return;
+    if (!confirm(`Sever node "${team.name}"? This will terminate all shared protocols.`)) return;
     await apiFetch(`/api/teams/${team.id}`, { method: "DELETE" });
-    toast({ title: "Team disbanded" });
+    toast({ title: "Node severed" });
     setActiveTeam(null);
     load();
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl space-y-8">
+    <div className="container mx-auto px-4 py-10 max-w-6xl space-y-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <Users className="h-7 w-7 text-primary" /> Teams
+        <h1 className="text-[3rem] font-bold tracking-tight flex items-center gap-3 text-white" style={{ fontFamily: "var(--app-font-display)" }}>
+          <Users className="h-10 w-10 text-[var(--primary)] drop-shadow-[0_0_12px_rgba(163,166,255,0.6)]" /> Sync Nodes
         </h1>
-        <p className="text-muted-foreground mt-1">Share articles and build a collective second brain with your team.</p>
+        <p className="text-[var(--on-surface-muted)] mt-3 text-lg">Establish collective intelligence networks.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Sidebar: team list + create/join */}
-        <div className="space-y-4">
-          {/* Create team */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-1.5"><Plus className="h-4 w-4 text-primary" /> Create Team</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleCreate} className="flex gap-2">
-                <Input placeholder="Team name" value={newTeamName} onChange={e => setNewTeamName(e.target.value)} className="flex-1" />
-                <Button type="submit" disabled={creating || !newTeamName.trim()} size="sm">
-                  {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="space-y-6">
+          <div className="bg-[var(--surface-high)] rounded-[0.5rem] p-6 border-t-2 border-[var(--primary)]">
+            <h3 className="label-caps text-[var(--primary)] mb-4 flex items-center gap-2"><Plus className="h-4 w-4" /> Initialize Node</h3>
+            <form onSubmit={handleCreate} className="flex gap-2">
+              <input placeholder="Node Designation" value={newTeamName} onChange={e => setNewTeamName(e.target.value)} className="input-glow flex-1 h-10 px-3 rounded-md bg-[var(--surface-highest)] border border-[var(--outline-variant)] text-[var(--on-surface)] text-sm" />
+              <Button type="submit" disabled={creating || !newTeamName.trim()} className="bg-[var(--primary)] hover:bg-[var(--primary)]/80 text-white w-10 p-0">
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              </Button>
+            </form>
+          </div>
 
-          {/* Join team */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-1.5"><LogIn className="h-4 w-4 text-primary" /> Join Team</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleJoin} className="flex gap-2">
-                <Input placeholder="Invite code" value={joinCode} onChange={e => setJoinCode(e.target.value)} className="flex-1 uppercase" />
-                <Button type="submit" disabled={joining || !joinCode.trim()} size="sm">
-                  {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+          <div className="bg-[var(--surface-high)] rounded-[0.5rem] p-6 border-t-2 border-[var(--secondary)]">
+            <h3 className="label-caps text-[var(--secondary)] mb-4 flex items-center gap-2"><LogIn className="h-4 w-4" /> Establish Connection</h3>
+            <form onSubmit={handleJoin} className="flex gap-2">
+              <input placeholder="Access Cipher" value={joinCode} onChange={e => setJoinCode(e.target.value)} className="input-glow flex-1 h-10 px-3 rounded-md bg-[var(--surface-highest)] border border-[var(--outline-variant)] text-[var(--on-surface)] uppercase text-sm font-mono tracking-widest" />
+              <Button type="submit" disabled={joining || !joinCode.trim()} className="bg-[var(--secondary)] hover:bg-[var(--secondary)]/80 text-[var(--surface)] w-10 p-0">
+                {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
+              </Button>
+            </form>
+          </div>
 
-          {/* Team list */}
-          {loading ? (
-            <div className="flex justify-center py-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-          ) : teams.length === 0 ? (
-            <div className="text-center py-6 text-sm text-muted-foreground">No teams yet. Create one or join with a code.</div>
-          ) : (
-            <div className="space-y-2">
-              {teams.map(team => (
-                <button key={team.id} onClick={() => setActiveTeam(team)}
-                  className={`w-full text-left p-3 rounded-lg border transition ${activeTeam?.id === team.id ? "border-primary bg-primary/5" : "border-border hover:bg-accent"}`}>
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">{team.name}</span>
-                    {team.myRole === "admin" && <Crown className="h-3.5 w-3.5 text-amber-500" />}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{team.memberCount} member{team.memberCount !== 1 ? "s" : ""}</div>
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="bg-[var(--surface-high)] rounded-[0.5rem] p-4 overflow-hidden">
+            <h3 className="label-caps text-[var(--on-surface-muted)] mb-4 px-2">Active Networks</h3>
+            {loading ? (
+              <div className="flex justify-center py-4"><Loader2 className="h-6 w-6 animate-spin text-[var(--primary)]" /></div>
+            ) : teams.length === 0 ? (
+              <div className="text-center py-6 text-sm text-[var(--on-surface-muted)]">No connected nodes.</div>
+            ) : (
+              <div className="space-y-2">
+                {teams.map(team => (
+                  <button key={team.id} onClick={() => setActiveTeam(team)}
+                    className={`w-full text-left p-4 rounded-lg border transition-all ${activeTeam?.id === team.id ? "border-[var(--primary)] bg-[var(--primary)]/10" : "border-transparent hover:bg-[var(--surface-bright)]"}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-[var(--on-surface)]">{team.name}</span>
+                      {team.myRole === "admin" && <Crown className="h-4 w-4 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" />}
+                    </div>
+                    <div className="text-xs text-[var(--on-surface-muted)]">{team.memberCount} unit{team.memberCount !== 1 ? "s" : ""}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Main: team view */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-6">
           {!activeTeam ? (
-            <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-xl text-muted-foreground flex-col gap-3">
-              <Users className="h-10 w-10 opacity-30" />
-              <p className="text-sm">Select or create a team to get started</p>
+            <div className="flex flex-col items-center justify-center h-[500px] border-2 border-dashed border-[var(--outline-variant)] rounded-[0.5rem] bg-[var(--surface-high)]/30">
+              <Users className="h-16 w-16 text-[var(--on-surface-muted)] opacity-20 mb-4" />
+              <p className="text-[var(--on-surface-muted)]">Initialize or connect to a node</p>
             </div>
           ) : (
             <>
-              {/* Team header */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div>
-                      <h2 className="text-xl font-bold">{activeTeam.name}</h2>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-xs">{activeTeam.memberCount} members</Badge>
-                        <Badge variant="secondary" className="text-xs capitalize">{activeTeam.plan} plan</Badge>
-                        {activeTeam.myRole === "admin" && <Badge variant="default" className="text-xs">Admin</Badge>}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleGetInviteCode(activeTeam)} className="gap-1.5">
-                        <Link2 className="h-3.5 w-3.5" /> Invite
-                      </Button>
-                      {activeTeam.myRole === "admin" && (
-                        <Button variant="ghost" size="sm" onClick={() => handleDisband(activeTeam)} className="gap-1.5 text-destructive hover:text-destructive">
-                          <Trash2 className="h-3.5 w-3.5" /> Disband
-                        </Button>
-                      )}
+              <div className="bg-[var(--surface-high)] p-8 rounded-[0.5rem] relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--primary)] rounded-full blur-[100px] opacity-10 pointer-events-none" />
+                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                  <div>
+                    <h2 className="text-3xl font-bold text-white mb-3" style={{ fontFamily: "var(--app-font-display)" }}>{activeTeam.name}</h2>
+                    <div className="flex items-center gap-3">
+                      <span className="label-caps px-2 py-1 rounded bg-[var(--surface-mid)] border border-[var(--outline-variant)] text-[var(--on-surface-muted)]">{activeTeam.memberCount} Units</span>
+                      <span className="label-caps px-2 py-1 rounded bg-[var(--surface-mid)] border border-[var(--outline-variant)] text-[var(--primary)]">Tier: {activeTeam.plan}</span>
+                      {activeTeam.myRole === "admin" && <span className="label-caps px-2 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400">Admin</span>}
                     </div>
                   </div>
-                  {inviteCode && (
-                    <div className="mt-3 flex items-center gap-2 bg-muted rounded-lg px-3 py-2">
-                      <code className="font-mono text-sm font-bold tracking-widest">{inviteCode}</code>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => navigator.clipboard.writeText(inviteCode)}>
-                        <Copy className="h-3 w-3" />
+                  <div className="flex gap-3">
+                    <Button onClick={() => handleGetInviteCode(activeTeam)} className="bg-[var(--surface-bright)] hover:bg-[var(--surface-highest)] border border-[var(--outline-variant)] text-white">
+                      <Link2 className="h-4 w-4 mr-2" /> Generate Cipher
+                    </Button>
+                    {activeTeam.myRole === "admin" && (
+                      <Button variant="ghost" onClick={() => handleDisband(activeTeam)} className="text-[var(--error)] bg-[var(--error)]/10 hover:bg-[var(--error)]/20 px-3">
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                      <span className="text-xs text-muted-foreground ml-1">Share this code to invite members</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Tabs */}
-              <div className="flex gap-1 bg-muted p-1 rounded-lg w-fit">
-                <Button variant={tab === "library" ? "secondary" : "ghost"} size="sm" onClick={() => setTab("library")} className="gap-1.5">
-                  <BookOpen className="h-3.5 w-3.5" /> Team Library
-                </Button>
-                <Button variant={tab === "ask" ? "secondary" : "ghost"} size="sm" onClick={() => setTab("ask")} className="gap-1.5">
-                  <MessageSquare className="h-3.5 w-3.5" /> Ask AI
-                </Button>
+                    )}
+                  </div>
+                </div>
+                {inviteCode && (
+                  <div className="mt-6 flex items-center justify-between bg-[var(--surface-highest)] border border-[var(--outline-variant)] rounded-lg p-4">
+                    <code className="font-mono text-lg font-bold tracking-widest text-[var(--secondary)]">{inviteCode}</code>
+                    <Button variant="ghost" size="sm" className="text-[var(--on-surface-muted)] hover:text-white" onClick={() => navigator.clipboard.writeText(inviteCode)}>
+                      <Copy className="h-4 w-4 mr-2" /> Copy
+                    </Button>
+                  </div>
+                )}
               </div>
 
-              {tab === "library" && (
-                <div>
-                  {teamArticlesLoading ? (
-                    <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-                  ) : teamArticles.length === 0 ? (
-                    <div className="text-center py-16 border-2 border-dashed rounded-xl text-muted-foreground">
-                      <Share2 className="h-10 w-10 mx-auto opacity-30 mb-3" />
-                      <p className="text-sm">No articles shared yet. Go to your Library and use "Share to Team".</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {teamArticles.map((a, i) => (
-                        <Card key={i} className="overflow-hidden">
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                  <Badge variant="secondary" className="text-xs">
-                                    Shared by {a.shared_by_username || a.shared_by_email}
-                                  </Badge>
-                                  <span className="text-xs text-muted-foreground">{new Date(a.shared_at).toLocaleDateString()}</span>
-                                </div>
-                                <h3 className="font-semibold text-sm leading-snug line-clamp-2">
-                                  {a.url ? <a href={a.url} target="_blank" rel="noreferrer" className="hover:underline text-primary">{a.title}</a> : a.title}
-                                </h3>
-                                {a.verdict && <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{a.verdict}</p>}
-                              </div>
-                              {a.recall_score && (
-                                <Badge variant="outline" className="text-xs shrink-0">
-                                  Recall: {a.recall_score}
-                                </Badge>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+              <div className="flex gap-2">
+                <button onClick={() => setTab("library")} className={`px-6 py-3 rounded-t-lg font-bold text-sm transition-colors border-b-2 ${tab === "library" ? "bg-[var(--surface-high)] border-[var(--primary)] text-white" : "border-transparent text-[var(--on-surface-muted)] hover:bg-[var(--surface-high)]/50"}`}>
+                  Collective Archive
+                </button>
+                <button onClick={() => setTab("ask")} className={`px-6 py-3 rounded-t-lg font-bold text-sm transition-colors border-b-2 ${tab === "ask" ? "bg-[var(--surface-high)] border-[var(--secondary)] text-white" : "border-transparent text-[var(--on-surface-muted)] hover:bg-[var(--surface-high)]/50"}`}>
+                  Neural Query
+                </button>
+              </div>
 
-              {tab === "ask" && (
-                <div className="space-y-4">
-                  <Card className="border-primary/20 bg-primary/5">
-                    <CardContent className="p-4">
-                      <form onSubmit={handleAsk} className="flex gap-3">
-                        <div className="relative flex-1">
-                          <MessageSquare className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                          <Input placeholder="Ask the team library anything…" value={question}
-                            onChange={e => setQuestion(e.target.value)} className="pl-9 bg-background" />
-                        </div>
-                        <Button type="submit" disabled={asking || !question.trim()} className="gap-1.5 shrink-0">
-                          {asking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Ask
-                        </Button>
-                      </form>
-                      {answer && (
-                        <div className="mt-4 p-4 bg-background rounded-lg border text-sm leading-relaxed">{answer}</div>
-                      )}
-                    </CardContent>
-                  </Card>
-                  <p className="text-xs text-muted-foreground text-center">AI searches across all {teamArticles.length} article{teamArticles.length !== 1 ? "s" : ""} shared in this team's library.</p>
-                </div>
-              )}
+              <div className="bg-[var(--surface-high)] rounded-b-[0.5rem] rounded-tr-[0.5rem] p-6 sm:p-8 min-h-[400px]">
+                {tab === "library" && (
+                  <div>
+                    {teamArticlesLoading ? (
+                      <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" /></div>
+                    ) : teamArticles.length === 0 ? (
+                      <div className="text-center py-16 border-2 border-dashed border-[var(--outline-variant)] rounded-xl">
+                        <Share2 className="h-12 w-12 mx-auto text-[var(--on-surface-muted)] opacity-30 mb-4" />
+                        <p className="text-[var(--on-surface-muted)]">No data blocks transmitted to this node.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {teamArticles.map((a, i) => (
+                          <div key={i} className="bg-[var(--surface-mid)] border border-[var(--outline-variant)] rounded-lg p-5 hover:border-[var(--primary)]/50 transition-colors">
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-3">
+                                  <span className="label-caps px-2 py-1 rounded bg-[var(--surface-bright)] text-[var(--on-surface)]">
+                                    Tx: {a.shared_by_username || a.shared_by_email}
+                                  </span>
+                                  <span className="text-xs text-[var(--on-surface-muted)]">{new Date(a.shared_at).toLocaleDateString()}</span>
+                                </div>
+                                <h3 className="font-bold text-lg text-white mb-2" style={{ fontFamily: "var(--app-font-display)" }}>
+                                  {a.url ? <a href={a.url} target="_blank" rel="noreferrer" className="hover:text-[var(--primary)] transition-colors">{a.title}</a> : a.title}
+                                </h3>
+                                {a.verdict && <p className="text-sm text-[var(--on-surface-muted)] line-clamp-2 leading-relaxed mb-4">{a.verdict}</p>}
+                                <div className="flex gap-2">
+                                  {a.recall_score && <span className="label-caps text-[#50fa7b]">RCLL: {a.recall_score}</span>}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {tab === "ask" && (
+                  <div className="space-y-6 max-w-3xl mx-auto">
+                    <div className="text-center mb-8">
+                      <MessageSquare className="h-10 w-10 text-[var(--secondary)] mx-auto mb-4 opacity-80" />
+                      <p className="text-[var(--on-surface-muted)]">Query across {teamArticles.length} blocks in the collective archive.</p>
+                    </div>
+                    
+                    <form onSubmit={handleAsk} className="relative">
+                      <input 
+                        placeholder="Initialize query..." 
+                        value={question} onChange={e => setQuestion(e.target.value)} 
+                        className="input-glow w-full h-14 pl-6 pr-16 rounded-xl bg-[var(--surface-highest)] border border-[var(--outline-variant)] text-[var(--on-surface)] transition-all" 
+                      />
+                      <button type="submit" disabled={asking || !question.trim()} className="absolute right-2 top-2 bottom-2 w-12 flex items-center justify-center bg-[var(--secondary)] hover:bg-[var(--secondary)]/80 text-[var(--surface)] rounded-lg transition-colors disabled:opacity-50">
+                        {asking ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                      </button>
+                    </form>
+                    
+                    {answer && (
+                      <div className="glass mt-6 p-6 rounded-xl border border-[var(--secondary)] shadow-[0_0_24px_rgba(83,221,252,0.15)] text-[var(--on-surface)] leading-relaxed relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-[var(--secondary)]" />
+                        <p>{answer}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>

@@ -1,11 +1,8 @@
 import { useState, useEffect } from "react";
 import { useGetHighlights, useDeleteHighlight, getGetHighlightsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Trash2, Quote, Pencil, BookOpen } from "lucide-react";
+import { Trash2, Quote, Pencil, BookOpen, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 async function apiFetch(path: string) {
@@ -41,116 +38,114 @@ export default function Highlights() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetHighlightsQueryKey() });
-        toast({ title: "Highlight removed" });
+        toast({ title: "Fragment Purged" });
       }
     }
   });
 
   const grouped = (highlights ?? []).reduce((acc, curr) => {
-    const title = curr.articleTitle || "Unknown Article";
+    const title = curr.articleTitle || "Unidentified Block";
     if (!acc[title]) acc[title] = [];
     acc[title].push(curr);
     return acc;
   }, {} as Record<string, typeof highlights extends undefined ? never[] : typeof highlights>);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Highlights & Notes</h1>
-        <div className="flex gap-1 bg-muted p-1 rounded-lg">
-          <Button variant={tab === "highlights" ? "secondary" : "ghost"} size="sm"
-            className="gap-1.5" onClick={() => setTab("highlights")}>
-            <Quote className="h-3.5 w-3.5" /> Highlights
-            {highlights && highlights.length > 0 && (
-              <Badge variant="outline" className="text-xs ml-1 h-4 px-1">{highlights.length}</Badge>
-            )}
-          </Button>
-          <Button variant={tab === "notes" ? "secondary" : "ghost"} size="sm"
-            className="gap-1.5" onClick={() => setTab("notes")}>
-            <Pencil className="h-3.5 w-3.5" /> Notes
-            {notes.length > 0 && (
-              <Badge variant="outline" className="text-xs ml-1 h-4 px-1">{notes.length}</Badge>
-            )}
-          </Button>
+    <div className="container mx-auto px-4 py-10 max-w-5xl space-y-10">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-[3rem] font-bold tracking-tight leading-none text-white flex items-center gap-3" style={{ fontFamily: "var(--app-font-display)" }}>
+            <Quote className="h-10 w-10 text-[var(--tertiary)] drop-shadow-[0_0_12px_rgba(193,128,255,0.6)]" /> Extracts
+          </h1>
+          <p className="text-[var(--on-surface-muted)] mt-3 text-lg">Isolated knowledge fragments and annotations.</p>
+        </div>
+
+        <div className="flex gap-2 p-1 bg-[var(--surface-high)] rounded-lg border border-[var(--outline-variant)]">
+          <button onClick={() => setTab("highlights")} className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${tab === "highlights" ? "bg-[var(--surface-bright)] text-white shadow-[0_0_12px_rgba(0,0,0,0.5)]" : "text-[var(--on-surface-muted)] hover:text-white"}`}>
+            Highlights
+            {highlights && highlights.length > 0 && <span className="ml-2 text-xs bg-[var(--surface-mid)] px-2 py-0.5 rounded text-[var(--tertiary)]">{highlights.length}</span>}
+          </button>
+          <button onClick={() => setTab("notes")} className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${tab === "notes" ? "bg-[var(--surface-bright)] text-white shadow-[0_0_12px_rgba(0,0,0,0.5)]" : "text-[var(--on-surface-muted)] hover:text-white"}`}>
+            Notes
+            {notes.length > 0 && <span className="ml-2 text-xs bg-[var(--surface-mid)] px-2 py-0.5 rounded text-[var(--secondary)]">{notes.length}</span>}
+          </button>
         </div>
       </div>
 
       {tab === "highlights" && (
-        <>
+        <div className="space-y-8">
           {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 w-full" />)}
+            <div className="space-y-6">
+              {[1, 2, 3].map(i => <div key={i} className="h-32 bg-[var(--surface-high)] rounded-[0.5rem] border border-[var(--outline-variant)] animate-pulse" />)}
             </div>
           ) : !highlights || highlights.length === 0 ? (
-            <div className="py-20 text-center">
-              <Quote className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
-              <h2 className="text-2xl font-bold mb-2">No highlights yet</h2>
-              <p className="text-muted-foreground">Save key takeaways from articles to see them here.</p>
+            <div className="text-center py-32 rounded-[0.5rem] bg-[var(--surface-high)] border border-[var(--outline-variant)]">
+              <Quote className="mx-auto h-12 w-12 text-[var(--on-surface-muted)] opacity-30 mb-6" />
+              <h2 className="text-xl font-bold text-white mb-2" style={{ fontFamily: "var(--app-font-display)" }}>No Extracted Fragments</h2>
+              <p className="text-[var(--on-surface-muted)]">Preserve key takeaways from blocks to populate this directory.</p>
             </div>
           ) : (
-            <div className="space-y-10">
+            <div className="space-y-12">
               {Object.entries(grouped).map(([title, groupHighlights]) => (
-                <div key={title} className="space-y-4">
-                  <h2 className="text-xl font-semibold text-primary">{title}</h2>
+                <div key={title} className="space-y-6">
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: "var(--app-font-display)" }}>
+                    <ChevronRight className="h-5 w-5 text-[var(--tertiary)]" /> {title}
+                  </h2>
                   <div className="grid gap-4 sm:grid-cols-2">
                     {groupHighlights.map(highlight => (
-                      <Card key={highlight.id} className="group relative bg-muted/20 border-l-4 border-l-primary">
-                        <CardContent className="p-4 pt-5">
-                          <Quote className="absolute top-2 left-2 h-4 w-4 text-primary/20" />
-                          <p className="text-sm leading-relaxed mb-3 mt-1 relative z-10">"{highlight.bulletText}"</p>
-                          {highlight.note && (
-                            <p className="text-xs text-muted-foreground italic border-t pt-2 mt-2">Note: {highlight.note}</p>
-                          )}
-                          <Button variant="ghost" size="icon"
-                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 text-muted-foreground hover:text-destructive"
-                            onClick={() => { if (confirm("Delete highlight?")) deleteMutation.mutate({ id: highlight.id }); }}>
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </CardContent>
-                      </Card>
+                      <div key={highlight.id} className="group relative bg-[var(--surface-high)] border border-[var(--outline-variant)] rounded-[0.5rem] p-6 hover:border-[var(--tertiary)]/50 transition-colors overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-[var(--tertiary)]" />
+                        <Quote className="absolute top-4 left-4 h-6 w-6 text-[var(--tertiary)]/10" />
+                        <p className="text-base text-[var(--on-surface)] leading-relaxed relative z-10 pl-6">"{highlight.bulletText}"</p>
+                        {highlight.note && (
+                          <div className="mt-4 pt-4 border-t border-[var(--outline-variant)] pl-6">
+                            <span className="label-caps text-[var(--on-surface-muted)] block mb-1">Annotation</span>
+                            <p className="text-sm text-[var(--on-surface)]">{highlight.note}</p>
+                          </div>
+                        )}
+                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--error)] bg-[var(--error)]/10 hover:bg-[var(--error)]/20"
+                          onClick={() => { if (confirm("Purge fragment?")) deleteMutation.mutate({ id: highlight.id }); }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </>
+        </div>
       )}
 
       {tab === "notes" && (
-        <>
+        <div className="space-y-8">
           {notesLoading ? (
             <div className="space-y-4">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 w-full" />)}
+              {[1, 2, 3].map(i => <div key={i} className="h-24 bg-[var(--surface-high)] rounded-[0.5rem] border border-[var(--outline-variant)] animate-pulse" />)}
             </div>
           ) : notes.length === 0 ? (
-            <div className="py-20 text-center">
-              <Pencil className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
-              <h2 className="text-2xl font-bold mb-2">No notes yet</h2>
-              <p className="text-muted-foreground">Open any article in your library and add personal notes to see them here.</p>
+            <div className="text-center py-32 rounded-[0.5rem] bg-[var(--surface-high)] border border-[var(--outline-variant)]">
+              <Pencil className="mx-auto h-12 w-12 text-[var(--on-surface-muted)] opacity-30 mb-6" />
+              <h2 className="text-xl font-bold text-white mb-2" style={{ fontFamily: "var(--app-font-display)" }}>No Annotations</h2>
+              <p className="text-[var(--on-surface-muted)]">Attach cognitive notes to blocks in your library.</p>
             </div>
           ) : (
             <div className="space-y-4">
               {notes.map(note => (
-                <Card key={note.id} className="border-l-4 border-l-amber-400 bg-amber-50/30 dark:bg-amber-950/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">Article #{note.articleId}</span>
-                          <span className="text-xs text-muted-foreground">·</span>
-                          <span className="text-xs text-muted-foreground">{new Date(note.updatedAt).toLocaleDateString()}</span>
-                        </div>
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{note.noteText}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div key={note.id} className="bg-[var(--surface-high)] border border-[var(--outline-variant)] rounded-[0.5rem] p-6 hover:border-[var(--secondary)]/50 transition-colors relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-[var(--secondary)]" />
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="label-caps bg-[var(--surface-bright)] px-2 py-1 rounded text-[var(--on-surface)] flex items-center gap-1.5">
+                      <BookOpen className="h-3 w-3 text-[var(--secondary)]" /> Block #{note.articleId}
+                    </span>
+                    <span className="text-xs text-[var(--on-surface-muted)]">{new Date(note.updatedAt).toLocaleDateString()}</span>
+                  </div>
+                  <p className="text-base text-[var(--on-surface)] leading-relaxed whitespace-pre-wrap">{note.noteText}</p>
+                </div>
               ))}
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

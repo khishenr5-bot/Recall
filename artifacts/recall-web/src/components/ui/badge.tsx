@@ -1,27 +1,16 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  // @replit
-  // Whitespace-nowrap: Badges should never wrap.
-  "whitespace-nowrap inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2" +
-  " hover-elevate ",
+  "inline-flex items-center rounded-[0.375rem] px-2.5 py-0.5 transition-colors focus:outline-none label-caps",
   {
     variants: {
       variant: {
-        default:
-          // @replit shadow-xs instead of shadow, no hover because we use hover-elevate
-          "border-transparent bg-primary text-primary-foreground shadow-xs",
-        secondary:
-          // @replit no hover because we use hover-elevate
-          "border-transparent bg-secondary text-secondary-foreground",
-        destructive:
-          // @replit shadow-xs instead of shadow, no hover because we use hover-elevate
-          "border-transparent bg-destructive text-destructive-foreground shadow-xs",
-          // @replit shadow-xs" - use badge outline variable
-        outline: "text-foreground border [border-color:var(--badge-outline)]",
+        default: "bg-[var(--surface-bright)] text-[var(--primary)] border border-transparent",
+        secondary: "bg-[var(--surface-mid)] text-[var(--secondary)] border border-[var(--outline-variant)]",
+        destructive: "bg-[var(--error)]/10 text-[var(--error)] border border-[var(--error)]/30",
+        outline: "text-[var(--on-surface-muted)] border border-[var(--outline-variant)] bg-transparent",
       },
     },
     defaultVariants: {

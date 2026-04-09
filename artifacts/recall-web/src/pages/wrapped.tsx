@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
-import { Loader2, Download, Share2, ChevronLeft, ChevronRight, Brain } from "lucide-react";
+import { Loader2, Download, ChevronLeft, ChevronRight, Brain } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 
@@ -26,14 +26,11 @@ async function apiFetch(path: string) {
   return fetch(path, { headers });
 }
 
-function Slide({ children, bg = "from-indigo-600 to-purple-700" }: { children: React.ReactNode; bg?: string }) {
+function Slide({ children, bgClass = "bg-[var(--surface-high)] border border-[var(--primary)]/30" }: { children: React.ReactNode; bgClass?: string }) {
   return (
-    <div className={`relative min-h-[500px] rounded-3xl bg-gradient-to-br ${bg} flex flex-col items-center justify-center text-center px-8 py-12 overflow-hidden`}>
-      <div className="absolute inset-0 opacity-10">
-        {Array.from({ length: 20 }).map((_, i) => (
-          <div key={i} className="absolute w-2 h-2 bg-white rounded-full"
-            style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, opacity: Math.random() }} />
-        ))}
+    <div className={`relative min-h-[600px] w-full max-w-[500px] mx-auto rounded-3xl ${bgClass} flex flex-col items-center justify-center text-center px-10 py-16 overflow-hidden shadow-[0_32px_64px_rgba(0,0,0,0.4)]`}>
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[120%] bg-[radial-gradient(ellipse_at_center,_rgba(163,166,255,0.15)_0%,_transparent_70%)]" />
       </div>
       <div className="relative z-10 w-full">{children}</div>
     </div>
@@ -59,7 +56,7 @@ export default function Wrapped({ year = YEAR }: { year?: number }) {
     if (!wrapRef.current) return;
     try {
       const { default: html2canvas } = await import("html2canvas");
-      const canvas = await html2canvas(wrapRef.current, { scale: 2, backgroundColor: null });
+      const canvas = await html2canvas(wrapRef.current, { scale: 2, backgroundColor: '#060e20' });
       canvas.toBlob(blob => {
         if (!blob) return;
         const url = URL.createObjectURL(blob);
@@ -67,29 +64,28 @@ export default function Wrapped({ year = YEAR }: { year?: number }) {
         a.href = url; a.download = `recall-wrapped-${year}.png`; a.click();
         URL.revokeObjectURL(url);
       });
-    } catch { alert("Download failed. Try again."); }
+    } catch { alert("Download failed."); }
   };
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] flex-col gap-4">
-        <p className="text-muted-foreground">Sign in to see your Recall Wrapped</p>
-        <Link href="/login"><Button>Sign in</Button></Link>
+      <div className="flex items-center justify-center min-h-[80vh] flex-col gap-6">
+        <p className="text-[var(--on-surface-muted)] text-lg">Authentication required for annual review.</p>
+        <Link href="/login"><Button className="gradient-btn px-8">Authenticate</Button></Link>
       </div>
     );
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return <div className="flex items-center justify-center min-h-[80vh]"><Loader2 className="h-10 w-10 animate-spin text-[var(--primary)]" /></div>;
   }
 
   if (!data || data.totalArticles === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-4">
-        <Brain className="h-16 w-16 text-primary/30" />
-        <h2 className="text-2xl font-bold">No reading data for {year}</h2>
-        <p className="text-muted-foreground max-w-sm">Start saving articles to build your {year} Recall Wrapped report.</p>
-        <Link href="/"><Button>Go summarise something</Button></Link>
+      <div className="flex flex-col items-center justify-center min-h-[80vh] gap-6 text-center px-4">
+        <Brain className="h-20 w-20 text-[var(--on-surface-muted)] opacity-30" />
+        <h2 className="text-3xl font-bold text-white" style={{ fontFamily: "var(--app-font-display)" }}>Insufficient Data ({year})</h2>
+        <p className="text-[var(--on-surface-muted)] max-w-sm text-lg">Initialize blocks in the neural archive to generate an annual report.</p>
       </div>
     );
   }
@@ -97,137 +93,107 @@ export default function Wrapped({ year = YEAR }: { year?: number }) {
   const maxTopicCount = Math.max(...(data.topTopics?.map(t => t.count) ?? [1]));
 
   const slides = [
-    // Slide 0: Intro
-    <Slide key={0} bg="from-indigo-700 to-purple-800">
-      <p className="text-white/60 text-sm font-bold uppercase tracking-widest mb-4">Recall Wrapped {year}</p>
-      <h1 className="text-5xl font-black text-white leading-tight mb-4">Your {year}<br />in Reading</h1>
-      <p className="text-white/70 text-lg">A year of knowledge, distilled.</p>
-      <div className="mt-8 text-6xl font-black text-white">{data.totalArticles}</div>
-      <p className="text-white/80 text-xl mt-1">articles saved</p>
+    <Slide key={0}>
+      <p className="label-caps text-[var(--primary)] mb-6 tracking-[0.2em]">Annual Review {year}</p>
+      <h1 className="text-5xl font-black text-white leading-tight mb-4" style={{ fontFamily: "var(--app-font-display)" }}>The Neural<br/>Archive</h1>
+      <p className="text-[var(--on-surface-muted)] text-lg">Data ingestion complete.</p>
+      <div className="mt-12 text-7xl font-black text-white drop-shadow-[0_0_24px_rgba(163,166,255,0.4)]" style={{ fontFamily: "var(--app-font-display)" }}>{data.totalArticles}</div>
+      <p className="label-caps text-[var(--on-surface-muted)] mt-4">Blocks Preserved</p>
     </Slide>,
 
-    // Slide 1: Time saved
-    <Slide key={1} bg="from-emerald-600 to-teal-700">
-      <p className="text-white/60 text-sm font-bold uppercase tracking-widest mb-6">Time Saved</p>
-      <div className="text-8xl font-black text-white mb-2">{data.totalReadingTimeSaved}</div>
-      <div className="text-3xl font-bold text-white/90 mb-4">minutes</div>
-      <p className="text-white/70 text-lg">of reading time saved with AI summaries</p>
-      <p className="text-white/50 text-sm mt-4">That's {Math.round(data.totalReadingTimeSaved / 60)} hours back in your life</p>
+    <Slide key={1}>
+      <p className="label-caps text-[var(--secondary)] mb-8 tracking-[0.2em]">Efficiency Protocol</p>
+      <div className="text-8xl font-black text-white mb-4 drop-shadow-[0_0_24px_rgba(83,221,252,0.4)]" style={{ fontFamily: "var(--app-font-display)" }}>{data.totalReadingTimeSaved}</div>
+      <div className="text-2xl font-bold text-[var(--secondary)] mb-6">Minutes Restored</div>
+      <p className="text-[var(--on-surface-muted)] text-lg mb-8">Raw cognitive time saved via AI synthesis.</p>
+      <div className="px-6 py-3 rounded-full bg-[var(--surface-highest)] border border-[var(--outline-variant)]">
+        <p className="text-[var(--on-surface)] text-sm font-medium">~{Math.round(data.totalReadingTimeSaved / 60)} hours reclaimed.</p>
+      </div>
     </Slide>,
 
-    // Slide 2: Top topics
-    <Slide key={2} bg="from-violet-700 to-pink-700">
-      <p className="text-white/60 text-sm font-bold uppercase tracking-widest mb-6">Your Top Topics</p>
-      <div className="w-full space-y-3 max-w-sm mx-auto">
+    <Slide key={2}>
+      <p className="label-caps text-[var(--tertiary)] mb-8 tracking-[0.2em]">Primary Vectors</p>
+      <div className="w-full space-y-6">
         {data.topTopics?.map((t, i) => (
-          <div key={t.topic} className="flex items-center gap-3">
-            <span className="text-white/60 text-sm w-4 shrink-0">{i + 1}</span>
-            <div className="flex-1">
-              <div className="flex justify-between text-sm font-medium text-white mb-1">
-                <span>{t.topic}</span>
-                <span>{t.count}</span>
-              </div>
+          <div key={t.topic} className="flex flex-col gap-2 text-left">
+            <div className="flex justify-between items-end">
+              <span className="text-white font-bold text-lg">{t.topic}</span>
+              <span className="text-[var(--tertiary)] font-mono">{t.count}</span>
+            </div>
+            <div className="h-1.5 bg-[var(--surface-highest)] rounded-full overflow-hidden">
               <motion.div
-                className="h-2 bg-white/20 rounded-full overflow-hidden"
-                initial={{ width: 0 }}
-                animate={{ width: "100%" }}
-                transition={{ delay: 0.2 + i * 0.1 }}
-              >
-                <motion.div
-                  className="h-full bg-white rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(t.count / maxTopicCount) * 100}%` }}
-                  transition={{ delay: 0.4 + i * 0.1, duration: 0.6 }}
-                />
-              </motion.div>
+                className="h-full bg-gradient-to-r from-[var(--tertiary)] to-[var(--primary)] rounded-full"
+                initial={{ width: 0 }} animate={{ width: `${(t.count / maxTopicCount) * 100}%` }}
+                transition={{ delay: 0.2 + i * 0.1, duration: 0.8 }}
+              />
             </div>
           </div>
         ))}
       </div>
     </Slide>,
 
-    // Slide 3: Streak
-    <Slide key={3} bg="from-amber-600 to-orange-600">
-      <p className="text-white/60 text-sm font-bold uppercase tracking-widest mb-6">Reading Streak</p>
-      <div className="text-8xl mb-2">🔥</div>
-      <div className="text-8xl font-black text-white mb-2">{data.longestStreak}</div>
-      <p className="text-white/90 text-2xl font-bold mb-2">day streak</p>
-      <p className="text-white/60">Your longest reading streak of {year}</p>
+    <Slide key={3}>
+      <p className="label-caps text-[#ff6b6b] mb-8 tracking-[0.2em]">Engagement Sequence</p>
+      <div className="w-24 h-24 rounded-full bg-[#ff6b6b]/10 border border-[#ff6b6b]/30 flex items-center justify-center mx-auto mb-8 shadow-[0_0_32px_rgba(255,107,107,0.3)]">
+        <div className="text-4xl">🔥</div>
+      </div>
+      <div className="text-7xl font-black text-white mb-2" style={{ fontFamily: "var(--app-font-display)" }}>{data.longestStreak}</div>
+      <p className="text-[#ff6b6b] text-xl font-bold mb-6">Consecutive Days</p>
+      <p className="text-[var(--on-surface-muted)]">Maximum uninterrupted uplink duration.</p>
       {data.totalHighlights > 0 && (
-        <p className="text-white/70 mt-6 text-lg">+ {data.totalHighlights} highlights saved</p>
-      )}
-    </Slide>,
-
-    // Slide 4: First article
-    <Slide key={4} bg="from-blue-700 to-cyan-700">
-      <p className="text-white/60 text-sm font-bold uppercase tracking-widest mb-6">Your First Save of {year}</p>
-      {data.firstArticle ? (
-        <>
-          <div className="text-5xl mb-4">📖</div>
-          <h3 className="text-2xl font-bold text-white leading-tight mb-2">{data.firstArticle.title}</h3>
-          <p className="text-white/60 text-sm">
-            {new Date(data.firstArticle.createdAt).toLocaleDateString(undefined, { month: "long", day: "numeric" })}
-          </p>
-        </>
-      ) : (
-        <p className="text-white/70">No articles saved yet</p>
-      )}
-      {data.mostSavedDomain && (
-        <div className="mt-8 bg-white/10 rounded-2xl px-6 py-3 inline-block">
-          <p className="text-white/70 text-sm">Most saved from</p>
-          <p className="text-white font-bold text-lg">{data.mostSavedDomain}</p>
+        <div className="mt-8 pt-6 border-t border-[var(--outline-variant)]">
+          <p className="text-[var(--on-surface)] text-lg font-medium">{data.totalHighlights} specific fragments extracted.</p>
         </div>
       )}
     </Slide>,
 
-    // Slide 5: Share
-    <Slide key={5} bg="from-rose-600 to-pink-700">
-      <div className="text-5xl mb-4">🎉</div>
-      <p className="text-white/60 text-sm font-bold uppercase tracking-widest mb-3">That's a wrap!</p>
-      <h2 className="text-4xl font-black text-white mb-4">Share Your<br />Recall Wrapped</h2>
-      <p className="text-white/70 mb-6">Show the world what you learned in {year}</p>
-      <div className="flex gap-3 justify-center">
-        <Button onClick={handleDownload} variant="secondary" className="gap-2 bg-white text-pink-700 hover:bg-white/90">
-          <Download className="h-4 w-4" /> Save as Image
-        </Button>
+    <Slide key={4}>
+      <p className="label-caps text-white mb-8 tracking-[0.2em]">Transmission Complete</p>
+      <div className="w-20 h-20 mx-auto mb-8 relative">
+        <div className="absolute inset-0 border-2 border-[var(--primary)] rounded-full animate-ping opacity-20" />
+        <div className="absolute inset-2 border-2 border-[var(--secondary)] rounded-full animate-ping opacity-40 animation-delay-150" />
+        <Brain className="absolute inset-0 w-full h-full text-[var(--primary)] drop-shadow-[0_0_12px_rgba(163,166,255,0.8)]" />
       </div>
+      <h2 className="text-3xl font-black text-white mb-8" style={{ fontFamily: "var(--app-font-display)" }}>Report Generated</h2>
+      <Button onClick={handleDownload} className="gradient-btn px-8 h-12 rounded-full font-bold w-full">
+        <Download className="h-4 w-4 mr-2" /> Export Artifact
+      </Button>
     </Slide>,
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <span>🎁</span> Recall Wrapped {year}
-        </h1>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleDownload} className="gap-1.5">
-            <Download className="h-3.5 w-3.5" /> Save
+    <div className="min-h-[100dvh] bg-[var(--surface)] relative overflow-hidden flex flex-col">
+      <div className="absolute inset-0 pointer-events-none opacity-30 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[var(--surface-bright)] via-[var(--surface)] to-[var(--surface)]" />
+      
+      <div className="relative z-10 px-8 py-6 shrink-0 flex items-center justify-between">
+        <Link href="/" className="text-[var(--on-surface-muted)] hover:text-white transition-colors flex items-center gap-2 text-sm font-medium">
+          <ChevronLeft className="h-4 w-4" /> Exit Review
+        </Link>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
+        <div ref={wrapRef} className="w-full max-w-[500px]">
+          <AnimatePresence mode="wait">
+            <motion.div key={slide} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }} transition={{ duration: 0.4, ease: "easeOut" }}>
+              {slides[slide]}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <div className="w-full max-w-[500px] flex items-center justify-between mt-10">
+          <Button variant="outline" onClick={() => setSlide(s => s - 1)} disabled={slide === 0} className="bg-[var(--surface-high)] border-[var(--outline-variant)] text-[var(--on-surface)] hover:bg-[var(--surface-bright)]">
+            <ChevronLeft className="h-4 w-4 mr-1" /> Back
+          </Button>
+          <div className="flex gap-2">
+            {slides.map((_, i) => (
+              <button key={i} onClick={() => setSlide(i)}
+                className={`h-2 rounded-full transition-all duration-300 ${i === slide ? "bg-[var(--primary)] w-8 shadow-[0_0_8px_rgba(163,166,255,0.6)]" : "bg-[var(--surface-bright)] w-2 hover:bg-[var(--primary)]/50"}`} />
+            ))}
+          </div>
+          <Button variant="outline" onClick={() => setSlide(s => s + 1)} disabled={slide === slides.length - 1} className="bg-[var(--surface-high)] border-[var(--outline-variant)] text-[var(--on-surface)] hover:bg-[var(--surface-bright)]">
+            Next <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
-      </div>
-
-      <div ref={wrapRef}>
-        <AnimatePresence mode="wait">
-          <motion.div key={slide} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.25 }}>
-            {slides[slide]}
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      <div className="flex items-center justify-between mt-6">
-        <Button variant="outline" onClick={() => setSlide(s => s - 1)} disabled={slide === 0} className="gap-1">
-          <ChevronLeft className="h-4 w-4" /> Prev
-        </Button>
-        <div className="flex gap-1.5">
-          {slides.map((_, i) => (
-            <button key={i} onClick={() => setSlide(i)}
-              className={`h-2 rounded-full transition-all ${i === slide ? "bg-primary w-6" : "bg-muted-foreground/30 w-2 hover:bg-muted-foreground/50"}`} />
-          ))}
-        </div>
-        <Button variant="outline" onClick={() => setSlide(s => s + 1)} disabled={slide === slides.length - 1} className="gap-1">
-          Next <ChevronRight className="h-4 w-4" />
-        </Button>
       </div>
     </div>
   );
