@@ -1,0 +1,31 @@
+"Build three browser/mobile extensions for Recall:
+1. Chrome Extension (Manifest V3)
+Create a complete Chrome extension in an /extension/chrome folder with these files:
+
+manifest.json: manifest_version 3, permissions: activeTab, contextMenus, storage, notifications. No icon references.
+background.js: Register right-click context menu 'Save to Recall' on links and pages. On click, get the URL, fetch auth token from chrome.storage.local, call POST [REPLIT_APP_URL]/api/summarize with the URL and auth bearer token, show a Chrome notification with the verdict when done.
+popup.html + popup.js: Show Recall.ai header. If not logged in, show email/password form that calls POST [REPLIT_APP_URL]/api/auth/login and stores token in chrome.storage.local. If logged in, show current page URL, a 'Summarise & Save' button that calls the API, last 5 saved articles fetched from GET [REPLIT_APP_URL]/api/saved with title and verdict preview, and an 'Open Recall' link. No external dependencies — vanilla JS only.
+content.js: When user selects any text on a webpage, show a small floating tooltip with two buttons — 'Summarise Page' and 'Save to Recall'. Clicking either sends the current page URL to the API.
+
+2. Firefox Extension (Manifest V2)
+Create identical extension in /extension/firefox folder but using Manifest V2 format for Firefox compatibility:
+
+manifest.json: manifest_version 2, use browser_action instead of action, use background scripts array instead of service_worker, add browser_specific_settings with gecko id: recall@recall.ai
+All other files identical to Chrome but use browser.* APIs instead of chrome.* APIs with a polyfill fallback: const api = typeof browser !== 'undefined' ? browser : chrome
+
+3. Mobile Share Sheet (PWA Web Share Target)
+Update the PWA manifest.json to register Recall as a share target:
+
+Add share_target to manifest.json: action /share-target, method POST, enctype application/x-www-form-urlencoded, params: {title: title, text: text, url: url}
+Create a new page /share-target in the React app that: reads the shared URL from query params, automatically triggers summarisation, shows the result, has a Save to Library button
+When user on Android long-presses any link in Chrome and taps Share, Recall appears as an option if the PWA is installed
+Update service worker to handle share target requests
+
+4. Backend auth endpoint needed by extensions:
+Add POST /api/auth/login that accepts {email, password}, calls Supabase auth.signInWithPassword, returns {token, user_email} — this is what the extension popup uses to log in without opening the full app.
+5. Important:
+
+Replace [REPLIT_APP_URL] with the actual deployed app URL throughout all extension files
+No placeholder or mock data anywhere
+Both extensions should work identically — save the same way, show the same popup UI
+Include a README.md in each extension folder with installation instructions"

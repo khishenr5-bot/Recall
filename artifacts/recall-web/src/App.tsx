@@ -18,6 +18,7 @@ import Graph from "@/pages/graph";
 import Create from "@/pages/create";
 import Share from "@/pages/share";
 import Settings from "@/pages/settings";
+import ShareTarget from "@/pages/share-target";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,7 +36,8 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/share/:token" component={(params) => <Layout><Share token={params.params.token} /></Layout>} />
-      
+      <Route path="/share-target" component={ShareTarget} />
+
       <Route path="/saved" component={() => <ProtectedRoute><Layout><Saved /></Layout></ProtectedRoute>} />
       <Route path="/highlights" component={() => <ProtectedRoute><Layout><Highlights /></Layout></ProtectedRoute>} />
       <Route path="/insights" component={() => <ProtectedRoute><Layout><Insights /></Layout></ProtectedRoute>} />

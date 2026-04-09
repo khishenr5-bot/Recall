@@ -1,0 +1,26 @@
+{
+  "manifest_version": 2,
+  "name": "Recall.ai",
+  "version": "1.0.0",
+  "description": "Save and summarise any webpage to your Recall.ai second brain.",
+  "permissions": ["activeTab", "contextMenus", "storage", "notifications", "<all_urls>"],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "recall@recall.ai",
+      "strict_min_version": "109.0"
+    }
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_title": "Recall.ai"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}
