@@ -11,7 +11,6 @@ import {
   Paperclip,
   Mic,
   ArrowRight,
-  Quote,
   Send,
   RefreshCw,
   X,
@@ -265,10 +264,21 @@ export default function Home() {
     recognition.start();
   };
 
-  const handleQuestionClick = (q: string) => {
+  const handleQuestionAutoSubmit = (q: string) => {
     setAskInput(q);
     askInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    setTimeout(() => askInputRef.current?.focus(), 300);
+    setTimeout(() => {
+      if (!summary) return;
+      askMutation.mutate({
+        data: {
+          question: q,
+          title: summary.title,
+          verdict: summary.verdict,
+          bullets: summary.bullets,
+          articleText: summary.articleText,
+        },
+      });
+    }, 200);
   };
 
   const handleAsk = (e: React.FormEvent) => {
@@ -500,24 +510,22 @@ export default function Home() {
               </div>
 
               <div className="p-8 md:p-10 border-b border-[var(--outline-variant)] bg-[var(--surface-high)]/30">
-                <h3 className="label-caps text-[var(--on-surface-muted)] mb-4">Neural Connections (Suggested)</h3>
+                <h3 className="text-sm font-medium text-[var(--on-surface-muted)] mb-4">You might want to ask...</h3>
                 {suggestQuestionsMutation.isPending ? (
-                  <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
                     {[1, 2, 3].map((n) => (
-                      <div key={n} className="h-12 bg-[var(--surface-bright)] animate-pulse rounded-lg border border-[var(--outline-variant)]" />
+                      <div key={n} className="h-8 w-40 bg-[var(--surface-bright)] animate-pulse rounded-full" />
                     ))}
                   </div>
                 ) : questions.length > 0 ? (
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap gap-2">
                     {questions.map((q, i) => (
                       <button
                         key={i}
-                        onClick={() => handleQuestionClick(q)}
-                        className="flex items-center gap-3 w-full text-left px-5 py-3 rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-bright)] hover:border-[var(--primary)] transition-all group"
+                        onClick={() => handleQuestionAutoSubmit(q)}
+                        className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm border border-[var(--outline-variant)] bg-[var(--surface-bright)] hover:border-[var(--primary)] hover:text-[var(--primary)] text-[var(--on-surface)] transition-all"
                       >
-                        <Quote className="h-4 w-4 text-[var(--primary)] shrink-0" />
-                        <span className="flex-1 text-sm text-[var(--on-surface)]">{q}</span>
-                        <ArrowRight className="h-4 w-4 text-[var(--on-surface-muted)] group-hover:text-[var(--primary)] transition-colors shrink-0" />
+                        {q}
                       </button>
                     ))}
                   </div>
@@ -525,7 +533,7 @@ export default function Home() {
               </div>
 
               <div className="p-8 md:p-10">
-                <h3 className="label-caps text-[var(--on-surface-muted)] mb-4">Interrogate the Library</h3>
+                <h3 className="text-sm font-medium text-[var(--on-surface-muted)] mb-4">Ask about this article</h3>
                 <form onSubmit={handleAsk} className="relative">
                   <input
                     ref={askInputRef}
@@ -560,7 +568,7 @@ export default function Home() {
 
               <div className="p-4 border-t border-[var(--outline-variant)] bg-[var(--surface-highest)] flex justify-end">
                 <Button onClick={handleSave} className="gradient-btn px-6 py-5 rounded-lg gap-2 text-sm font-bold w-full sm:w-auto h-auto">
-                  Preserve to Library
+                  Save to Library
                 </Button>
               </div>
             </div>

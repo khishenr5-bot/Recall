@@ -1,0 +1,40 @@
+Fix four things in Recall:
+1. Fix Question Suggestions (Neural Connections)
+The suggested questions are too long, too technical, and feel like they were generated without context. Fix the /api/suggest-questions endpoint:
+
+Generate exactly 3 short, punchy questions (max 12 words each) that a curious reader would naturally ask after reading the article
+Questions should be conversational, not academic — 'What makes this approach better than existing methods?' not 'How does the progressive disclosure pattern for skills compare in token efficiency across different context window sizes...'
+Each question should be answerable from the article content
+Format as simple clickable chips, not tall cards with quote icons
+When clicked, auto-fill the interrogate input and submit immediately
+
+2. Fix UI Copy — Make It Intuitive
+Replace all technical/jargon labels with natural, friendly language:
+
+'NEURAL CONNECTIONS (SUGGESTED)' → 'You might want to ask...'
+'INTERROGATE THE LIBRARY' → 'Ask about this article'
+'CAPTURE INSIGHT' → 'Save'
+'Knowledge blocks preserved in your neural collective' → 'articles saved to your library'
+'AI SYNTHESIS BY RECALL.AI' → 'AI Summary'
+'ACTIVE CONTEXT' → 'Article Details'
+'EVOLVE VIEWPORT' → 'Load more'
+'Perform a semantic search across your collective' → 'Search your library...'
+'SECOND BRAIN' → 'Your Library'
+Keep the dark aesthetic but use plain human language throughout
+
+3. Add Light Mode Toggle
+
+Add a sun/moon icon button in the nav bar
+Light mode colors: background #F8F9FF, cards #FFFFFF, text #1a1a2e, primary stays #6366f1
+Save preference to localStorage
+Smooth transition between modes (200ms)
+Default to dark mode
+
+4. Add Google Auth + Language Options
+
+On the login and signup pages, add 'Continue with Google' button — full width, Google colors, G logo, above the email/password form with an 'or' divider
+Configure using Supabase Google OAuth with GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables
+After Google login redirect to home page
+In Settings page, add a Language Preference section with a dropdown: English, हिंदी (Hindi), தமிழ் (Tamil), తెలుగు (Telugu), മലയാളം (Malayalam), ಕನ್ನಡ (Kannada), বাংলা (Bengali)
+Save language preference to Supabase user profile
+When language is set, all AI summaries and verdicts are generated in that language"

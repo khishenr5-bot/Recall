@@ -53,12 +53,12 @@ function NoteEditor({ articleId, initialNote }: { articleId: number; initialNote
     <div className="space-y-2 mt-4 pt-4 border-t border-[var(--outline-variant)]">
       <div className="flex items-center justify-between">
         <label className="label-caps flex items-center gap-1.5 text-[var(--primary)]">
-          <Pencil className="h-3 w-3" /> Cognitive Notes
+          <Pencil className="h-3 w-3" /> Notes
         </label>
-        {saved && <span className="text-xs text-[var(--secondary)]">Synced ✓</span>}
+        {saved && <span className="text-xs text-[var(--secondary)]">Saved ✓</span>}
       </div>
       <Textarea
-        placeholder="Append personal reflections to this cognitive block..."
+        placeholder="Add your thoughts..."
         value={note}
         onChange={handleChange}
         className="min-h-[100px] text-sm resize-none bg-[var(--surface-low)] border border-[var(--outline-variant)] rounded-lg input-glow"
@@ -156,7 +156,7 @@ export default function Saved() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetSavedArticlesQueryKey() });
-        toast({ title: "Block Purged" });
+        toast({ title: "Article deleted" });
       }
     }
   });
@@ -168,10 +168,10 @@ export default function Saved() {
   };
 
   const filterLabels: Array<[ReadingStatus | "all", string]> = [
-    ["all", "All Blocks"],
-    ["unread", "Unprocessed"],
-    ["reading", "In Processing"],
-    ["completed", "Preserved"],
+    ["all", "All"],
+    ["unread", "Unread"],
+    ["reading", "In Progress"],
+    ["completed", "Completed"],
   ];
 
   return (
@@ -180,20 +180,20 @@ export default function Saved() {
         <DialogContent className="max-w-sm glass border-[var(--outline-variant)]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-white" style={{ fontFamily: "var(--app-font-display)" }}>
-              <Users className="h-4 w-4 text-[var(--primary)]" /> Distribute to Node
+              <Users className="h-4 w-4 text-[var(--primary)]" /> Share to team
             </DialogTitle>
             <DialogDescription className="line-clamp-1 text-[var(--on-surface-muted)]">{shareToTeamArticle?.title}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 mt-4">
             {teams.length === 0 ? (
               <div className="text-sm text-[var(--on-surface-muted)] text-center py-4">
-                No connected nodes. <Link href="/teams" className="text-[var(--primary)] underline">Establish connection</Link>
+                You're not in any teams yet. <Link href="/teams" className="text-[var(--primary)] underline">Browse teams</Link>
               </div>
             ) : (
               teams.map(t => (
                 <Button key={t.id} variant="outline" className="w-full justify-start gap-3 bg-[var(--surface-high)] border-[var(--outline-variant)] text-[var(--on-surface)] hover:bg-[var(--surface-bright)]" onClick={() => handleShareToTeam(t.id)} disabled={!!sharingTeamId}>
                   {sharingTeamId === t.id ? <Loader2 className="h-4 w-4 animate-spin text-[var(--primary)]" /> : <Users className="h-4 w-4 text-[var(--primary)]" />}
-                  {t.name} <span className="text-xs text-[var(--on-surface-muted)] ml-auto">{t.memberCount} units</span>
+                  {t.name} <span className="text-xs text-[var(--on-surface-muted)] ml-auto">{t.memberCount} members</span>
                 </Button>
               ))
             )}
@@ -204,14 +204,14 @@ export default function Saved() {
       <div className="container mx-auto px-4 py-10 max-w-5xl space-y-10">
         <div>
           <h1 className="text-[3rem] font-bold tracking-tight leading-none text-white" style={{ fontFamily: "var(--app-font-display)" }}>Library</h1>
-          <p className="text-[var(--on-surface-muted)] mt-3 text-lg">{savedData?.total || 0} knowledge blocks preserved in your neural collective.</p>
+          <p className="text-[var(--on-surface-muted)] mt-3 text-lg">{savedData?.total || 0} articles saved to your library.</p>
         </div>
 
         {/* Search */}
         <div className="relative w-full shadow-[0_16px_48px_rgba(163,166,255,0.06)]">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--on-surface-muted)]" />
           <input
-            placeholder="Query your archive by keyword or concept..."
+            placeholder="Search your library..."
             className="input-glow w-full h-[60px] pl-12 pr-4 text-base rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-highest)] text-[var(--on-surface)] placeholder-[var(--on-surface-muted)] transition-all"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -248,8 +248,8 @@ export default function Saved() {
         ) : savedData?.articles.length === 0 ? (
           <div className="text-center py-32 rounded-[0.5rem] bg-[var(--surface-high)] border border-[var(--outline-variant)]">
             <Brain className="mx-auto h-12 w-12 text-[var(--on-surface-muted)] opacity-30 mb-6" />
-            <h3 className="text-xl font-bold text-white mb-2" style={{ fontFamily: "var(--app-font-display)" }}>Archive Empty</h3>
-            <p className="text-[var(--on-surface-muted)]">Transmit content to the Neural Engine to begin assembly.</p>
+            <h3 className="text-xl font-bold text-white mb-2" style={{ fontFamily: "var(--app-font-display)" }}>Library empty</h3>
+            <p className="text-[var(--on-surface-muted)]">Analyze a URL or upload a file to get started.</p>
           </div>
         ) : (
           <div className="grid gap-6">

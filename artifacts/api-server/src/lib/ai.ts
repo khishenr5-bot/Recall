@@ -64,17 +64,23 @@ Rules:
 export async function generateSuggestedQuestions(title: string, verdict: string, bullets: string[]): Promise<string[]> {
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5",
-    max_tokens: 8192,
+    max_tokens: 512,
     messages: [
       {
         role: "user",
-        content: `Generate 3 insightful follow-up questions about this article.
+        content: `Generate exactly 3 short, punchy follow-up questions a curious reader would naturally ask after reading this article.
+
+Rules:
+- Maximum 12 words per question
+- Conversational tone, not academic
+- Each question must be answerable from the article
+- No jargon, no complex multi-part questions
 
 Title: ${title}
 Verdict: ${verdict}
-Key Points: ${bullets.join(" | ")}
+Key Points: ${bullets.slice(0, 3).join(" | ")}
 
-Return ONLY a JSON array of 3 question strings, no explanation:
+Return ONLY a JSON array of exactly 3 short question strings:
 ["question 1?", "question 2?", "question 3?"]`
       }
     ]
@@ -82,11 +88,15 @@ Return ONLY a JSON array of 3 question strings, no explanation:
 
   const text = message.content[0].type === "text" ? message.content[0].text : "";
   const arrMatch = text.match(/\[[\s\S]*\]/);
-  if (!arrMatch) return ["What are the main implications of this?", "How does this relate to current trends?", "What should I do with this information?"];
+  if (!arrMatch) return ["What's the main takeaway here?", "Who would benefit most from this?", "What should I do with this?"];
   try {
-    return JSON.parse(arrMatch[0]).slice(0, 3);
+    const parsed = JSON.parse(arrMatch[0]).slice(0, 3);
+    return parsed.map((q: string) => {
+      const words = q.trim().split(/\s+/);
+      return words.length > 14 ? words.slice(0, 14).join(" ").replace(/[,;:]$/, "") + "?" : q.trim();
+    });
   } catch {
-    return ["What are the main implications of this?", "How does this relate to current trends?", "What should I do with this information?"];
+    return ["What's the main takeaway here?", "Who would benefit most from this?", "What should I do with this?"];
   }
 }
 

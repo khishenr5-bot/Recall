@@ -69,15 +69,39 @@
   --radius: 0.5rem;
 }
 
+.light {
+  --surface: #F8F9FF;
+  --surface-bright: #e8eaf6;
+  --surface-low: #f0f2ff;
+  --surface-mid: #eef0fa;
+  --surface-high: #ffffff;
+  --surface-highest: #f5f6ff;
+  --on-surface: #1a1a2e;
+  --on-surface-muted: #5a5a7a;
+  --primary: #6366f1;
+  --primary-container: #4f46e5;
+  --secondary: #0891b2;
+  --tertiary: #9333ea;
+  --outline-variant: rgba(100, 116, 139, 0.2);
+  --error: #dc2626;
+}
+
+.light .glass {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.85);
+}
+
 @layer base {
   html {
     background-color: var(--surface);
+    transition: background-color 200ms ease, color 200ms ease;
   }
   body {
     font-family: var(--app-font-sans);
     background-color: var(--surface);
     color: var(--on-surface);
     min-height: 100dvh;
+    transition: background-color 200ms ease, color 200ms ease;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--app-font-display);
