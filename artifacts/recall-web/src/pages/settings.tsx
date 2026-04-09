@@ -4,12 +4,12 @@ import { useUpdateProfile, getGetMeQueryKey } from "@workspace/api-client-react"
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Loader2, Moon, Sun, Monitor, AlertTriangle } from "lucide-react";
+import { Loader2, Moon, Sun, Monitor, AlertTriangle, Download, FileJson, FileText, Sheet } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function Settings() {
@@ -17,9 +17,10 @@ export default function Settings() {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const [username, setUsername] = useState(user?.username || "");
   const [language, setLanguage] = useState(user?.preferredLanguage || "en");
+  const [exportLoading, setExportLoading] = useState<string | null>(null);
 
   const updateProfileMutation = useUpdateProfile({
     mutation: {
@@ -35,12 +36,39 @@ export default function Settings() {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfileMutation.mutate({ 
-      data: { 
-        username, 
-        preferredLanguage: language 
-      } 
+    updateProfileMutation.mutate({
+      data: {
+        username,
+        preferredLanguage: language
+      }
     });
+  };
+
+  const handleExport = async (format: "json" | "markdown" | "csv") => {
+    setExportLoading(format);
+    try {
+      const token = localStorage.getItem("recall_token");
+      if (!token) { toast({ title: "Sign in required", description: "Please sign in to export your data.", variant: "destructive" }); return; }
+      const res = await fetch(`/api/export/${format}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Export failed");
+      const contentDisposition = res.headers.get("Content-Disposition") ?? "";
+      const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+      const filename = filenameMatch?.[1] ?? `recall-export.${format}`;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Export ready", description: `Your ${format.toUpperCase()} file is downloading.` });
+    } catch {
+      toast({ title: "Export failed", description: "Could not generate your export.", variant: "destructive" });
+    } finally {
+      setExportLoading(null);
+    }
   };
 
   return (
@@ -68,7 +96,7 @@ export default function Settings() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="language">Preferred Summary Language</Label>
-              <select 
+              <select
                 id="language"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={language}
@@ -97,8 +125,8 @@ export default function Settings() {
           <CardDescription>Customize how Recall.ai looks on your device.</CardDescription>
         </CardHeader>
         <CardContent>
-          <RadioGroup 
-            value={theme} 
+          <RadioGroup
+            value={theme}
             onValueChange={(val: any) => setTheme(val)}
             className="grid grid-cols-3 gap-4"
           >
@@ -158,6 +186,62 @@ export default function Settings() {
             <Button variant="default">Upgrade</Button>
           </CardFooter>
         )}
+      </Card>
+
+      {/* Data Export */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            Export Your Data
+          </CardTitle>
+          <CardDescription>
+            Download everything you've saved — articles, highlights, and collections. Your data, always.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid sm:grid-cols-3 gap-3">
+            <button
+              onClick={() => handleExport("json")}
+              disabled={exportLoading !== null}
+              className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border hover:border-primary/40 hover:bg-accent transition text-center disabled:opacity-60"
+            >
+              {exportLoading === "json" ? <Loader2 className="h-7 w-7 animate-spin text-primary" /> : <FileJson className="h-7 w-7 text-primary" />}
+              <div>
+                <p className="font-semibold text-sm">JSON Export</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Full structured data</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => handleExport("markdown")}
+              disabled={exportLoading !== null}
+              className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border hover:border-primary/40 hover:bg-accent transition text-center disabled:opacity-60"
+            >
+              {exportLoading === "markdown" ? <Loader2 className="h-7 w-7 animate-spin text-primary" /> : <FileText className="h-7 w-7 text-purple-500" />}
+              <div>
+                <p className="font-semibold text-sm">Markdown</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Human-readable library</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => handleExport("csv")}
+              disabled={exportLoading !== null}
+              className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border hover:border-primary/40 hover:bg-accent transition text-center disabled:opacity-60"
+            >
+              {exportLoading === "csv" ? <Loader2 className="h-7 w-7 animate-spin text-primary" /> : <Sheet className="h-7 w-7 text-emerald-500" />}
+              <div>
+                <p className="font-semibold text-sm">CSV</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Spreadsheet-ready</p>
+              </div>
+            </button>
+          </div>
+
+          <p className="text-xs text-muted-foreground pt-1">
+            Exports include all your saved articles, highlights, and collections. Sign in is required.
+          </p>
+        </CardContent>
       </Card>
 
       <Card className="border-destructive/50">

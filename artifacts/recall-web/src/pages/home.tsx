@@ -17,8 +17,14 @@ import {
   Send,
   RefreshCw,
   X,
+  FlipHorizontal,
+  HelpCircle,
+  LayoutTemplate,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { FlashcardViewer } from "@/components/flashcard-viewer";
+import { QuizMode } from "@/components/quiz-mode";
+import { InfographicView } from "@/components/infographic-view";
 
 // Extend window for SpeechRecognition
 declare global {
@@ -42,6 +48,13 @@ export default function Home() {
   const [askAnswer, setAskAnswer] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isListening, setIsListening] = useState(false);
+
+  // Learning tools
+  const [activeTool, setActiveTool] = useState<"flashcards" | "quiz" | "infographic" | null>(null);
+  const [flashcards, setFlashcards] = useState<any[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
+  const [infographic, setInfographic] = useState<any>(null);
+  const [toolLoading, setToolLoading] = useState(false);
 
   const resultRef = useRef<HTMLDivElement>(null);
   const askInputRef = useRef<HTMLInputElement>(null);
@@ -240,8 +253,35 @@ export default function Home() {
     setSelectedFile(null);
     setAskInput("");
     setAskAnswer(null);
+    setActiveTool(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
     setTimeout(() => urlInputRef.current?.focus(), 100);
+  };
+
+  const loadTool = async (tool: "flashcards" | "quiz" | "infographic") => {
+    if (!summary) return;
+    if (activeTool === tool) { setActiveTool(null); return; }
+    setActiveTool(tool);
+    setToolLoading(true);
+    try {
+      const token = localStorage.getItem("recall_token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`/api/${tool}`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ title: summary.title, verdict: summary.verdict, bullets: summary.bullets }),
+      });
+      const data = await res.json();
+      if (tool === "flashcards") setFlashcards(data.flashcards ?? []);
+      else if (tool === "quiz") setQuizQuestions(data.questions ?? []);
+      else if (tool === "infographic") setInfographic(data);
+    } catch {
+      toast({ title: "Error", description: "Failed to generate content", variant: "destructive" });
+      setActiveTool(null);
+    } finally {
+      setToolLoading(false);
+    }
   };
 
   const getScoreColor = (score: number) => {
@@ -549,7 +589,7 @@ export default function Home() {
               </div>
 
               {/* Action buttons */}
-              <div className="p-6 flex flex-wrap items-center justify-center gap-3">
+              <div className="p-6 border-b border-border/60 flex flex-wrap items-center justify-center gap-3">
                 <Button variant="outline" className="gap-2" onClick={() => {}}>
                   <Share2 className="h-4 w-4" />
                   Share
@@ -562,6 +602,59 @@ export default function Home() {
                   )}
                   Save to Library
                 </Button>
+              </div>
+
+              {/* Learning Tools */}
+              <div className="p-6">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+                  Learning Tools
+                </h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {([
+                    { id: "flashcards", label: "Flashcards", icon: FlipHorizontal, emoji: "🃏" },
+                    { id: "quiz", label: "Quiz Mode", icon: HelpCircle, emoji: "🧠" },
+                    { id: "infographic", label: "Infographic", icon: LayoutTemplate, emoji: "📊" },
+                  ] as const).map(tool => (
+                    <button
+                      key={tool.id}
+                      onClick={() => loadTool(tool.id)}
+                      disabled={toolLoading && activeTool !== tool.id}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                        activeTool === tool.id
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/30 border-border hover:bg-accent hover:border-primary/40 text-foreground/80"
+                      }`}
+                    >
+                      {toolLoading && activeTool === tool.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <span>{tool.emoji}</span>
+                      )}
+                      {tool.label}
+                    </button>
+                  ))}
+                </div>
+
+                <AnimatePresence mode="wait">
+                  {activeTool && !toolLoading && (
+                    <motion.div
+                      key={activeTool}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                    >
+                      {activeTool === "flashcards" && flashcards.length > 0 && (
+                        <FlashcardViewer cards={flashcards} />
+                      )}
+                      {activeTool === "quiz" && quizQuestions.length > 0 && (
+                        <QuizMode questions={quizQuestions} />
+                      )}
+                      {activeTool === "infographic" && infographic && (
+                        <InfographicView data={infographic} />
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </motion.div>

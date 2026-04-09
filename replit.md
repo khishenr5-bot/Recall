@@ -2,7 +2,7 @@
 
 ## Overview
 
-A full-stack AI content intelligence app. Users paste any URL (articles, YouTube videos, PDFs) and get an AI-generated verdict on whether it's worth reading, dynamic bullet summaries, and can ask questions about content. Builds a personal second brain over time.
+A full-stack AI content intelligence app. Users paste any URL (articles, YouTube videos, PDFs) and get an AI-generated verdict on whether it's worth reading, dynamic bullet summaries, and can ask questions about content. Includes Learning Tools (flashcards, quiz mode, infographic), Slide Deck Generator, Deep Research mode, and full data export. Builds a personal second brain over time.
 
 ## Stack
 

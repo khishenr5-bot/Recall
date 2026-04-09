@@ -250,6 +250,147 @@ Extract 4-7 distinct topic categories.`
   };
 }
 
+export async function generateFlashcards(title: string, verdict: string, bullets: string[]): Promise<Array<{ front: string; back: string }>> {
+  const message = await anthropic.messages.create({
+    model: "claude-haiku-4-5",
+    max_tokens: 4096,
+    messages: [{
+      role: "user",
+      content: `Create 8 flashcards from this article. Each flashcard tests a key concept.
+
+Title: ${title}
+Verdict: ${verdict}
+Key Points: ${bullets.join(" | ")}
+
+Return ONLY a JSON array of 8 objects, no explanation:
+[{"front": "Question or concept prompt?", "back": "Clear, concise answer"}, ...]`
+    }]
+  });
+  const text = message.content[0].type === "text" ? message.content[0].text : "[]";
+  const match = text.match(/\[[\s\S]*\]/);
+  try { return JSON.parse(match?.[0] ?? "[]").slice(0, 8); } catch { return []; }
+}
+
+export async function generateQuiz(title: string, verdict: string, bullets: string[]): Promise<Array<{ question: string; options: string[]; correctIndex: number; explanation: string }>> {
+  const message = await anthropic.messages.create({
+    model: "claude-haiku-4-5",
+    max_tokens: 4096,
+    messages: [{
+      role: "user",
+      content: `Create 5 multiple choice questions from this article.
+
+Title: ${title}
+Verdict: ${verdict}
+Key Points: ${bullets.join(" | ")}
+
+Return ONLY a JSON array of 5 objects, no explanation:
+[{"question": "Question text?", "options": ["A", "B", "C", "D"], "correctIndex": 0, "explanation": "Brief explanation of why this is correct"}, ...]`
+    }]
+  });
+  const text = message.content[0].type === "text" ? message.content[0].text : "[]";
+  const match = text.match(/\[[\s\S]*\]/);
+  try { return JSON.parse(match?.[0] ?? "[]").slice(0, 5); } catch { return []; }
+}
+
+export async function generateInfographic(title: string, verdict: string, bullets: string[]): Promise<{
+  title: string; subtitle: string;
+  sections: Array<{ heading: string; points: string[] }>;
+  keyStat: string; bottomLine: string;
+}> {
+  const message = await anthropic.messages.create({
+    model: "claude-haiku-4-5",
+    max_tokens: 2048,
+    messages: [{
+      role: "user",
+      content: `Create an infographic layout for this article.
+
+Title: ${title}
+Verdict: ${verdict}
+Key Points: ${bullets.join(" | ")}
+
+Return ONLY JSON, no explanation:
+{"title": "Short punchy title", "subtitle": "One-line subtitle", "sections": [{"heading": "Section name", "points": ["point 1", "point 2"]}, ...], "keyStat": "One striking statistic or fact", "bottomLine": "One-sentence takeaway"}`
+    }]
+  });
+  const text = message.content[0].type === "text" ? message.content[0].text : "{}";
+  const match = text.match(/\{[\s\S]*\}/);
+  try {
+    const p = JSON.parse(match?.[0] ?? "{}");
+    return { title: p.title ?? title, subtitle: p.subtitle ?? verdict, sections: p.sections ?? [], keyStat: p.keyStat ?? "", bottomLine: p.bottomLine ?? "" };
+  } catch {
+    return { title, subtitle: verdict, sections: [], keyStat: "", bottomLine: "" };
+  }
+}
+
+export async function generateSlides(title: string, verdict: string, bullets: string[], instructions?: string): Promise<Array<{ slideNumber: number; layout: string; title: string; content: string | string[]; speakerNotes: string }>> {
+  const message = await anthropic.messages.create({
+    model: "claude-haiku-4-5",
+    max_tokens: 4096,
+    messages: [{
+      role: "user",
+      content: `Create an 8-slide presentation for this article.${instructions ? ` Custom instructions: ${instructions}` : ""}
+
+Title: ${title}
+Verdict: ${verdict}
+Key Points: ${bullets.join(" | ")}
+
+Layouts available: "title" (large centered text), "content" (title + bullets), "two_column" (title + two arrays), "quote" (title + single quote), "stats" (title + stat highlights)
+
+Return ONLY a JSON array, no explanation:
+[{"slideNumber": 1, "layout": "title", "title": "Title text", "content": "Subtitle or quote text", "speakerNotes": "What to say"}, ...]`
+    }]
+  });
+  const text = message.content[0].type === "text" ? message.content[0].text : "[]";
+  const match = text.match(/\[[\s\S]*\]/);
+  try { return JSON.parse(match?.[0] ?? "[]").slice(0, 10); } catch { return []; }
+}
+
+export async function generateDeepResearch(question: string, articles: Array<{ id: number; title: string; verdict: string; bullets: string[] }>): Promise<{
+  subQuestions: string[];
+  relevantArticles: Array<{ id: number; title: string; relevance: string }>;
+  searchQueries: string[];
+  synthesis: string;
+}> {
+  const libraryCtx = articles.slice(0, 15).map(a =>
+    `[ID:${a.id}] "${a.title}": ${a.bullets.slice(0, 2).join(". ")}`
+  ).join("\n");
+
+  const message = await anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 4096,
+    messages: [{
+      role: "user",
+      content: `Perform deep research on this question using the user's library.
+
+Question: ${question}
+
+User's Library:
+${libraryCtx || "No articles saved yet."}
+
+Return ONLY JSON, no explanation:
+{
+  "subQuestions": ["sub-question 1", "sub-question 2", "sub-question 3"],
+  "relevantArticles": [{"id": 1, "title": "Article title", "relevance": "Why this is relevant"}],
+  "searchQueries": ["google search 1", "google search 2", "google search 3"],
+  "synthesis": "Comprehensive 3-5 paragraph synthesis answer"
+}`
+    }]
+  });
+  const text = message.content[0].type === "text" ? message.content[0].text : "{}";
+  const match = text.match(/\{[\s\S]*\}/);
+  try {
+    const p = JSON.parse(match?.[0] ?? "{}");
+    return {
+      subQuestions: p.subQuestions ?? [],
+      relevantArticles: p.relevantArticles ?? [],
+      searchQueries: p.searchQueries ?? [],
+      synthesis: p.synthesis ?? "",
+    };
+  } catch {
+    return { subQuestions: [], relevantArticles: [], searchQueries: [], synthesis: "Unable to synthesize research." };
+  }
+}
+
 export async function generateMentorRecommendations(articles: Array<{ title: string; verdict: string }>): Promise<{
   knowledgeGaps: Array<{ topic: string; description: string; suggestedReads: string[] }>;
   insights: string;

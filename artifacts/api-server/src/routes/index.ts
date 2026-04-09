@@ -8,6 +8,8 @@ import highlightsRouter from "./highlights";
 import insightsRouter from "./insights";
 import digestRouter from "./digest";
 import paymentsRouter from "./payments";
+import toolsRouter from "./tools";
+import exportRouter from "./export";
 
 const router: IRouter = Router();
 
@@ -20,5 +22,7 @@ router.use(highlightsRouter);
 router.use(insightsRouter);
 router.use(digestRouter);
 router.use(paymentsRouter);
+router.use(toolsRouter);
+router.use(exportRouter);
 
 export default router;
