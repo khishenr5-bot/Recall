@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useSummarize, useSuggestQuestions, useSaveArticle, useAskAboutContent } from "@workspace/api-client-react";
+import { useSuggestQuestions, useSaveArticle, useAskAboutContent } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -16,39 +16,56 @@ import {
   Quote,
   Send,
   RefreshCw,
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Extend window for SpeechRecognition
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
+const API_BASE = "/api";
+
 export default function Home() {
-  const { user } = useAuth();
+  const { user, login: setAuth } = useAuth();
   const { toast } = useToast();
+
   const [url, setUrl] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [summary, setSummary] = useState<any>(null);
   const [questions, setQuestions] = useState<string[]>([]);
   const [askInput, setAskInput] = useState("");
   const [askAnswer, setAskAnswer] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const resultRef = useRef<HTMLDivElement>(null);
   const askInputRef = useRef<HTMLInputElement>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
 
-  const summarizeMutation = useSummarize({
-    mutation: {
-      onSuccess: (data) => {
-        setSummary(data);
-        setAskAnswer(null);
-        suggestQuestionsMutation.mutate({
-          data: { title: data.title, verdict: data.verdict, bullets: data.bullets },
-        });
-        setTimeout(() => {
-          resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 100);
-      },
-      onError: (err: any) => {
-        toast({ title: "Error", description: err.message || "Failed to summarize URL", variant: "destructive" });
-      },
-    },
-  });
+  // Handle Google OAuth token in URL (?token=xxx)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    if (token) {
+      // Fetch user info with the token
+      fetch(`${API_BASE}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => r.json())
+        .then((userData) => {
+          if (userData && userData.id) {
+            setAuth(token, userData);
+            window.history.replaceState({}, "", window.location.pathname);
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   const suggestQuestionsMutation = useSuggestQuestions({
     mutation: {
@@ -74,13 +91,104 @@ export default function Home() {
     },
   });
 
-  const handleSummarize = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!url.trim()) return;
+  const submitSummarize = async (formData: FormData | { url: string }) => {
+    setIsSubmitting(true);
     setSummary(null);
     setQuestions([]);
     setAskAnswer(null);
-    summarizeMutation.mutate({ data: { url } });
+
+    try {
+      let body: BodyInit;
+      let headers: HeadersInit = {};
+      const token = localStorage.getItem("recall_token");
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      if (formData instanceof FormData) {
+        body = formData;
+      } else {
+        body = JSON.stringify(formData);
+        headers["Content-Type"] = "application/json";
+      }
+
+      const res = await fetch(`${API_BASE}/summarize`, { method: "POST", headers, body });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || "Failed to summarize");
+      }
+
+      const data = await res.json();
+      setSummary(data);
+      suggestQuestionsMutation.mutate({
+        data: { title: data.title, verdict: data.verdict, bullets: data.bullets },
+      });
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to summarize", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSummarize = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedFile) {
+      const fd = new FormData();
+      fd.append("file", selectedFile);
+      submitSummarize(fd);
+    } else if (url.trim()) {
+      submitSummarize({ url: url.trim() });
+    }
+  };
+
+  // File picker
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setUrl("");
+    }
+  };
+
+  const clearFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setTimeout(() => urlInputRef.current?.focus(), 50);
+  };
+
+  // Microphone / SpeechRecognition
+  const handleMicClick = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({ title: "Not supported", description: "Speech recognition is not supported in this browser.", variant: "destructive" });
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setSelectedFile(null);
+      setUrl(transcript);
+      // Auto-submit after a brief delay
+      setTimeout(() => submitSummarize({ url: transcript }), 400);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
   };
 
   const handleQuestionClick = (q: string) => {
@@ -129,10 +237,11 @@ export default function Home() {
     setSummary(null);
     setQuestions([]);
     setUrl("");
+    setSelectedFile(null);
     setAskInput("");
     setAskAnswer(null);
-    setTimeout(() => urlInputRef.current?.focus(), 100);
     window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => urlInputRef.current?.focus(), 100);
   };
 
   const getScoreColor = (score: number) => {
@@ -147,6 +256,15 @@ export default function Home() {
     { emoji: "📎", label: "PDFs" },
   ];
 
+  const socialProof = [
+    "10,000+ articles saved",
+    "50+ languages supported",
+    "4.8★ rating",
+  ];
+
+  const inputDisplayValue = selectedFile ? selectedFile.name : url;
+  const inputPlaceholder = "Paste article, video, or document URL...";
+
   return (
     <div className="relative min-h-screen">
       {/* Dot pattern background */}
@@ -160,7 +278,7 @@ export default function Home() {
 
       {/* Progress bar */}
       <AnimatePresence>
-        {summarizeMutation.isPending && (
+        {isSubmitting && (
           <motion.div
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
@@ -171,6 +289,15 @@ export default function Home() {
           />
         )}
       </AnimatePresence>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.docx,.txt"
+        className="hidden"
+        onChange={handleFileChange}
+      />
 
       {/* Hero section */}
       <div
@@ -199,36 +326,64 @@ export default function Home() {
             </>
           )}
 
-          {/* URL Input */}
+          {/* URL / File Input */}
           <form onSubmit={handleSummarize} className="relative flex items-center w-full">
             <div className="relative flex-1 flex items-center">
-              <span className="absolute left-4 text-muted-foreground">
-                <Paperclip className="h-4 w-4" />
-              </span>
-              <input
-                ref={urlInputRef}
-                type="url"
-                placeholder="Paste article, video, or document URL..."
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                required
-                className="w-full h-14 pl-10 pr-12 text-base rounded-full border border-border bg-background shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
-              />
+              {/* Paperclip button */}
               <button
                 type="button"
-                className="absolute right-3 text-muted-foreground hover:text-foreground transition"
-                tabIndex={-1}
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute left-3 text-muted-foreground hover:text-primary transition z-10"
+                title="Upload PDF, DOCX, or TXT"
+              >
+                <Paperclip className="h-4 w-4" />
+              </button>
+
+              {selectedFile ? (
+                /* File selected state */
+                <div className="w-full h-14 pl-10 pr-12 flex items-center gap-2 rounded-full border border-primary/50 bg-primary/5 shadow-sm">
+                  <span className="flex-1 text-sm text-foreground truncate">{selectedFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={clearFile}
+                    className="text-muted-foreground hover:text-destructive transition shrink-0"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <input
+                  ref={urlInputRef}
+                  type="url"
+                  placeholder={inputPlaceholder}
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="w-full h-14 pl-10 pr-12 text-base rounded-full border border-border bg-background shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                />
+              )}
+
+              {/* Mic button */}
+              <button
+                type="button"
+                onClick={handleMicClick}
+                className={`absolute right-3 transition z-10 ${
+                  isListening
+                    ? "text-red-500 animate-pulse"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title={isListening ? "Stop listening" : "Speak to search"}
               >
                 <Mic className="h-4 w-4" />
               </button>
             </div>
+
             <Button
               type="submit"
               size="lg"
-              disabled={summarizeMutation.isPending}
+              disabled={isSubmitting || (!url.trim() && !selectedFile)}
               className="ml-2 h-14 px-6 rounded-full shrink-0 shadow-md"
             >
-              {summarizeMutation.isPending ? (
+              {isSubmitting ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
@@ -241,16 +396,28 @@ export default function Home() {
 
           {/* Content type chips */}
           {!summary && (
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              {exampleChips.map((c) => (
-                <span
-                  key={c.label}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted/50 text-sm text-muted-foreground"
-                >
-                  {c.emoji} {c.label}
-                </span>
-              ))}
-            </div>
+            <>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {exampleChips.map((c) => (
+                  <span
+                    key={c.label}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted/50 text-sm text-muted-foreground"
+                  >
+                    {c.emoji} {c.label}
+                  </span>
+                ))}
+              </div>
+
+              {/* Social proof stats */}
+              <div className="flex items-center justify-center gap-2 flex-wrap text-sm text-muted-foreground/70 pt-2">
+                {socialProof.map((stat, i) => (
+                  <span key={stat} className="flex items-center gap-2">
+                    {i > 0 && <span className="opacity-40">·</span>}
+                    {stat}
+                  </span>
+                ))}
+              </div>
+            </>
           )}
         </motion.div>
       </div>
@@ -280,15 +447,11 @@ export default function Home() {
               <div className="p-6 border-b border-border/60">
                 <h2 className="text-2xl font-bold leading-tight text-foreground mb-3">{summary.title}</h2>
                 <div className="flex flex-wrap gap-2">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${getScoreColor(summary.recallScore)}`}
-                  >
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${getScoreColor(summary.recallScore)}`}>
                     <Brain className="h-3.5 w-3.5" />
                     Recall {summary.recallScore}/10
                   </span>
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${getScoreColor(summary.credibilityScore)}`}
-                  >
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${getScoreColor(summary.credibilityScore)}`}>
                     <Shield className="h-3.5 w-3.5" />
                     Trust {summary.credibilityScore}/10
                   </span>
@@ -369,11 +532,7 @@ export default function Home() {
                     className="flex-1 h-11 px-4 text-sm rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
                   />
                   <Button type="submit" size="sm" className="h-11 px-4 rounded-xl" disabled={askMutation.isPending || !askInput.trim()}>
-                    {askMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
+                    {askMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </form>
                 <AnimatePresence>
@@ -395,11 +554,7 @@ export default function Home() {
                   <Share2 className="h-4 w-4" />
                   Share
                 </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={saveMutation.isPending}
-                  className="gap-2"
-                >
+                <Button onClick={handleSave} disabled={saveMutation.isPending} className="gap-2">
                   {saveMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (

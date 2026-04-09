@@ -1,7 +1,9 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import passport from "passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { signToken, requireAuth, type AuthRequest } from "../lib/auth";
 import {
   RegisterBody,
@@ -11,6 +13,72 @@ import {
 
 const router = Router();
 
+// --- Google OAuth (only initialise when keys are present) ---
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const REPLIT_DEV_DOMAIN = process.env.REPLIT_DEV_DOMAIN;
+
+if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
+  const callbackURL = REPLIT_DEV_DOMAIN
+    ? `https://${REPLIT_DEV_DOMAIN}/api/auth/google/callback`
+    : "http://localhost:8080/api/auth/google/callback";
+
+  passport.use(
+    new GoogleStrategy(
+      { clientID: GOOGLE_CLIENT_ID, clientSecret: GOOGLE_CLIENT_SECRET, callbackURL, scope: ["profile", "email"] },
+      async (_accessToken, _refreshToken, profile, done) => {
+        try {
+          const email = profile.emails?.[0]?.value;
+          const avatarUrl = profile.photos?.[0]?.value ?? null;
+          const displayName = profile.displayName;
+          if (!email) return done(new Error("No email from Google"), undefined);
+
+          const [existing] = await db
+            .select()
+            .from(usersTable)
+            .where(or(eq(usersTable.googleId, profile.id), eq(usersTable.email, email)));
+
+          if (existing) {
+            const updates: Partial<typeof usersTable.$inferInsert> = {};
+            if (!existing.googleId) updates.googleId = profile.id;
+            if (!existing.avatarUrl && avatarUrl) updates.avatarUrl = avatarUrl;
+            if (Object.keys(updates).length > 0) {
+              await db.update(usersTable).set(updates).where(eq(usersTable.id, existing.id));
+            }
+            return done(null, { ...existing, ...updates });
+          }
+
+          const [created] = await db
+            .insert(usersTable)
+            .values({ email, passwordHash: "", googleId: profile.id, avatarUrl, username: displayName })
+            .returning();
+          return done(null, created);
+        } catch (err) {
+          return done(err as Error, undefined);
+        }
+      }
+    )
+  );
+
+  router.use(passport.initialize());
+
+  router.get("/auth/google", passport.authenticate("google", { session: false, scope: ["profile", "email"] }));
+
+  router.get(
+    "/auth/google/callback",
+    passport.authenticate("google", { session: false, failureRedirect: "/login?error=google_failed" }),
+    (req, res) => {
+      const user = req.user as typeof usersTable.$inferSelect;
+      const token = signToken(user.id);
+      const frontendBase = REPLIT_DEV_DOMAIN
+        ? `https://${REPLIT_DEV_DOMAIN}`
+        : "http://localhost:24816";
+      res.redirect(`${frontendBase}/?token=${token}`);
+    }
+  );
+}
+
+// --- Standard auth ---
 router.post("/auth/register", async (req, res): Promise<void> => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
@@ -22,7 +90,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 
   const [existing] = await db.select().from(usersTable).where(eq(usersTable.email, email));
   if (existing) {
-    res.status(400).json({ error: "Email already registered" });
+    res.status(409).json({ error: "Email already registered" });
     return;
   }
 
@@ -44,20 +112,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   }
 
   const token = signToken(user.id);
-  res.status(201).json({
-    token,
-    user: {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-      plan: user.plan,
-      monthlySavesCount: user.monthlySavesCount,
-      savesLimit: user.savesLimit,
-      preferredLanguage: user.preferredLanguage,
-      onboardingCompleted: user.onboardingCompleted,
-      createdAt: user.createdAt,
-    },
-  });
+  res.status(201).json({ token, user });
 });
 
 router.post("/auth/login", async (req, res): Promise<void> => {
@@ -75,6 +130,11 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
+  if (!user.passwordHash) {
+    res.status(401).json({ error: "This account uses Google sign-in. Please continue with Google." });
+    return;
+  }
+
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     res.status(401).json({ error: "Invalid email or password" });
@@ -82,20 +142,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 
   const token = signToken(user.id);
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-      plan: user.plan,
-      monthlySavesCount: user.monthlySavesCount,
-      savesLimit: user.savesLimit,
-      preferredLanguage: user.preferredLanguage,
-      onboardingCompleted: user.onboardingCompleted,
-      createdAt: user.createdAt,
-    },
-  });
+  res.json({ token, user });
 });
 
 router.post("/auth/logout", requireAuth, async (_req, res): Promise<void> => {
@@ -104,17 +151,7 @@ router.post("/auth/logout", requireAuth, async (_req, res): Promise<void> => {
 
 router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
   const user = (req as AuthRequest).user;
-  res.json({
-    id: user.id,
-    email: user.email,
-    username: user.username,
-    plan: user.plan,
-    monthlySavesCount: user.monthlySavesCount,
-    savesLimit: user.savesLimit,
-    preferredLanguage: user.preferredLanguage,
-    onboardingCompleted: user.onboardingCompleted,
-    createdAt: user.createdAt,
-  });
+  res.json(user);
 });
 
 router.patch("/auth/profile", requireAuth, async (req, res): Promise<void> => {
@@ -136,17 +173,7 @@ router.patch("/auth/profile", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  res.json({
-    id: updated.id,
-    email: updated.email,
-    username: updated.username,
-    plan: updated.plan,
-    monthlySavesCount: updated.monthlySavesCount,
-    savesLimit: updated.savesLimit,
-    preferredLanguage: updated.preferredLanguage,
-    onboardingCompleted: updated.onboardingCompleted,
-    createdAt: updated.createdAt,
-  });
+  res.json(updated);
 });
 
 export default router;

@@ -127,6 +127,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
+                      {(user as any).avatarUrl && (
+                        <img
+                          src={(user as any).avatarUrl}
+                          alt={user.username || user.email}
+                          className="h-8 w-8 rounded-full object-cover"
+                        />
+                      )}
                       <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
                         {user.username?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
                       </AvatarFallback>

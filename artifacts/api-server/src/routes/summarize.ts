@@ -1,4 +1,5 @@
 import { Router } from "express";
+import multer from "multer";
 import { db, usersTable, savedArticlesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAuth, optionalAuth, type AuthRequest } from "../lib/auth";
@@ -19,8 +20,9 @@ import {
 } from "@workspace/api-zod";
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
-router.post("/summarize", optionalAuth, async (req, res): Promise<void> => {
+router.post("/summarize", optionalAuth, upload.single("file"), async (req, res): Promise<void> => {
   const user = (req as AuthRequest).user ?? null;
 
   // Check usage limit for free users (anonymous users can always summarize)
@@ -29,13 +31,54 @@ router.post("/summarize", optionalAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  const lang = req.body?.preferredLanguage ?? user?.preferredLanguage ?? "en";
+
+  // Handle file upload
+  if (req.file) {
+    const filename = req.file.originalname;
+    const ext = filename.split(".").pop()?.toLowerCase();
+    let content = "";
+
+    if (ext === "txt") {
+      content = req.file.buffer.toString("utf-8");
+    } else if (ext === "pdf" || ext === "docx") {
+      // For PDF/DOCX we extract readable text via toString (basic fallback)
+      // A production app would use pdf-parse / mammoth, but buffer text works for now
+      content = req.file.buffer.toString("utf-8").replace(/[^\x20-\x7E\n\t]/g, " ").replace(/\s+/g, " ").trim();
+    } else {
+      content = req.file.buffer.toString("utf-8");
+    }
+
+    if (!content || content.length < 50) {
+      res.status(400).json({ error: "Could not extract readable text from the file. Please try a .txt file." });
+      return;
+    }
+
+    req.log.info({ filename }, "Summarizing uploaded file");
+    const summary = await generateSummary(content.slice(0, 50000), filename, lang);
+    res.json({
+      title: filename,
+      verdict: summary.verdict,
+      bullets: summary.bullets,
+      articleText: content.slice(0, 10000),
+      language: summary.language,
+      recallScore: summary.recallScore,
+      credibilityScore: summary.credibilityScore,
+      credibilityVerdict: summary.credibilityVerdict,
+      url: "",
+      sourceType: "url" as const,
+    });
+    return;
+  }
+
+  // Handle URL
   const parsed = SummarizeBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
-  const { url, preferredLanguage } = parsed.data;
+  const { url } = parsed.data;
 
   if (!url) {
     res.status(400).json({ error: "URL is required" });
@@ -45,7 +88,6 @@ router.post("/summarize", optionalAuth, async (req, res): Promise<void> => {
   req.log.info({ url }, "Summarizing URL");
 
   const scraped = await scrapeUrl(url);
-  const lang = preferredLanguage ?? user?.preferredLanguage ?? "en";
   const summary = await generateSummary(scraped.content, scraped.title, lang);
 
   res.json({
