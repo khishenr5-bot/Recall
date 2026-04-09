@@ -25,6 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FlashcardViewer } from "@/components/flashcard-viewer";
 import { QuizMode } from "@/components/quiz-mode";
 import { InfographicView } from "@/components/infographic-view";
+import { Link } from "wouter";
 
 // Extend window for SpeechRecognition
 declare global {
@@ -351,6 +352,20 @@ export default function Home() {
           transition={{ duration: 0.55 }}
           className="w-full max-w-[680px] text-center space-y-5"
         >
+          {/* Wrapped seasonal banner */}
+          {user && !summary && new Date().getMonth() === 11 && (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+              className="w-full max-w-sm mx-auto mb-2">
+              <Link href={`/wrapped/${new Date().getFullYear()}`}>
+                <div className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold px-4 py-2.5 rounded-full cursor-pointer hover:opacity-90 transition shadow-lg">
+                  <span>🎁</span>
+                  <span>Your {new Date().getFullYear()} Recall Wrapped is ready!</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </div>
+              </Link>
+            </motion.div>
+          )}
+
           {!summary && (
             <>
               <h1 className="text-[36px] md:text-[56px] font-extrabold tracking-tight leading-tight text-foreground">

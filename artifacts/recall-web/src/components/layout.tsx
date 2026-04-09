@@ -16,6 +16,7 @@ import {
   Settings,
   LogOut,
   Upload,
+  Rss,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -39,6 +40,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navLinks = [
     { href: "/saved", label: "Library", icon: BookMarked },
+    { href: "/feeds", label: "Feeds", icon: Rss },
     { href: "/highlights", label: "Highlights", icon: Quote },
     { href: "/insights", label: "Insights", icon: LineChart },
     { href: "/graph", label: "Graph", icon: Network },

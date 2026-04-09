@@ -19,6 +19,8 @@ import Create from "@/pages/create";
 import Share from "@/pages/share";
 import Settings from "@/pages/settings";
 import ShareTarget from "@/pages/share-target";
+import Feeds from "@/pages/feeds";
+import Wrapped from "@/pages/wrapped";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +39,8 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/share/:token" component={(params) => <Layout><Share token={params.params.token} /></Layout>} />
       <Route path="/share-target" component={ShareTarget} />
+      <Route path="/wrapped/:year" component={(p) => <Layout><Wrapped year={Number(p.params.year)} /></Layout>} />
+      <Route path="/wrapped" component={() => <Layout><Wrapped /></Layout>} />
 
       <Route path="/saved" component={() => <ProtectedRoute><Layout><Saved /></Layout></ProtectedRoute>} />
       <Route path="/highlights" component={() => <ProtectedRoute><Layout><Highlights /></Layout></ProtectedRoute>} />
@@ -44,6 +48,7 @@ function Router() {
       <Route path="/graph" component={() => <ProtectedRoute><Layout><Graph /></Layout></ProtectedRoute>} />
       <Route path="/create" component={() => <ProtectedRoute><Layout><Create /></Layout></ProtectedRoute>} />
       <Route path="/settings" component={() => <ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
+      <Route path="/feeds" component={() => <ProtectedRoute><Layout><Feeds /></Layout></ProtectedRoute>} />
       
       <Route component={() => <Layout><NotFound /></Layout>} />
     </Switch>

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, boolean, jsonb, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, boolean, jsonb, real, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
@@ -23,6 +23,10 @@ export const savedArticlesTable = pgTable("saved_articles", {
   reviewCount: integer("review_count").notNull().default(0),
   nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
   sourceType: text("source_type").notNull().default("url"),
+  status: text("status").notNull().default("unread"),
+  readingProgress: integer("reading_progress").notNull().default(0),
+  isRss: boolean("is_rss").notNull().default(false),
+  rssFeedId: integer("rss_feed_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

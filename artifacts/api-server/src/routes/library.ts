@@ -37,6 +37,10 @@ function formatArticle(a: typeof savedArticlesTable.$inferSelect) {
     lastReviewedAt: a.lastReviewedAt?.toISOString() ?? null,
     reviewCount: a.reviewCount,
     sourceType: a.sourceType,
+    status: (a as any).status ?? "unread",
+    readingProgress: (a as any).readingProgress ?? 0,
+    isRss: (a as any).isRss ?? false,
+    rssFeedId: (a as any).rssFeedId ?? null,
     createdAt: a.createdAt.toISOString(),
   };
 }
@@ -51,12 +55,17 @@ router.get("/saved", requireAuth, async (req, res): Promise<void> => {
   }
 
   const { page, limit, collection_id, search, sort } = parsed.data;
+  const status = typeof req.query.status === "string" ? req.query.status : null;
   const offset = ((page ?? 1) - 1) * (limit ?? 20);
 
   const conditions = [eq(savedArticlesTable.userId, user.id)];
 
   if (collection_id != null) {
     conditions.push(eq(savedArticlesTable.collectionId, collection_id));
+  }
+
+  if (status && ["unread", "reading", "completed"].includes(status)) {
+    conditions.push(eq((savedArticlesTable as any).status, status));
   }
 
   if (search) {

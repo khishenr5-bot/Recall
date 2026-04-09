@@ -10,6 +10,10 @@ import digestRouter from "./digest";
 import paymentsRouter from "./payments";
 import toolsRouter from "./tools";
 import exportRouter from "./export";
+import feedsRouter from "./feeds";
+import notesRouter from "./notes";
+import streakRouter from "./streak";
+import wrappedRouter from "./wrapped";
 
 const router: IRouter = Router();
 
@@ -24,5 +28,9 @@ router.use(digestRouter);
 router.use(paymentsRouter);
 router.use(toolsRouter);
 router.use(exportRouter);
+router.use(feedsRouter);
+router.use(notesRouter);
+router.use(streakRouter);
+router.use(wrappedRouter);
 
 export default router;

@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
-import { Loader2, Moon, Sun, Monitor, AlertTriangle, Download, FileJson, FileText, Sheet } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Loader2, Moon, Sun, Monitor, AlertTriangle, Download, FileJson, FileText, Sheet, Target, Gift } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Link } from "wouter";
 
 export default function Settings() {
   const { user } = useAuth();
@@ -21,6 +22,35 @@ export default function Settings() {
   const [username, setUsername] = useState(user?.username || "");
   const [language, setLanguage] = useState(user?.preferredLanguage || "en");
   const [exportLoading, setExportLoading] = useState<string | null>(null);
+  const [weeklyGoal, setWeeklyGoal] = useState(7);
+  const [goalSaving, setGoalSaving] = useState(false);
+
+  const currentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    const token = localStorage.getItem("recall_token");
+    if (!token) return;
+    fetch("/api/streak", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json()).then(d => { if (d.weeklyGoal) setWeeklyGoal(d.weeklyGoal); }).catch(() => {});
+  }, []);
+
+  const saveGoal = async () => {
+    const token = localStorage.getItem("recall_token");
+    if (!token) return;
+    setGoalSaving(true);
+    try {
+      await fetch("/api/streak/goal", {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ weeklyReadingGoal: weeklyGoal }),
+      });
+      toast({ title: "Goal updated!" });
+    } catch {
+      toast({ title: "Failed to save goal", variant: "destructive" });
+    } finally {
+      setGoalSaving(false);
+    }
+  };
 
   const updateProfileMutation = useUpdateProfile({
     mutation: {
@@ -242,6 +272,36 @@ export default function Settings() {
             Exports include all your saved articles, highlights, and collections. Sign in is required.
           </p>
         </CardContent>
+      </Card>
+
+      {/* Reading Goals */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Target className="h-5 w-5 text-primary" /> Reading Goals</CardTitle>
+          <CardDescription>Set a weekly reading goal to stay on track and build your streak.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <Label className="text-sm font-medium">Articles per week</Label>
+              <div className="flex items-center gap-3 mt-2">
+                <Button variant="outline" size="sm" className="h-9 w-9 p-0" onClick={() => setWeeklyGoal(g => Math.max(1, g - 1))}>−</Button>
+                <span className="text-2xl font-bold w-10 text-center">{weeklyGoal}</span>
+                <Button variant="outline" size="sm" className="h-9 w-9 p-0" onClick={() => setWeeklyGoal(g => Math.min(50, g + 1))}>+</Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="border-t px-6 py-4 flex justify-between items-center">
+          <Link href={`/wrapped/${currentYear}`}>
+            <Button variant="outline" className="gap-2">
+              <Gift className="h-4 w-4 text-primary" /> View Recall Wrapped {currentYear}
+            </Button>
+          </Link>
+          <Button onClick={saveGoal} disabled={goalSaving}>
+            {goalSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save Goal
+          </Button>
+        </CardFooter>
       </Card>
 
       <Card className="border-destructive/50">
