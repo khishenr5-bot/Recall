@@ -34,13 +34,15 @@ if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
 }
 
 if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
-  const callbackURL = REPLIT_DEV_DOMAIN
-    ? `https://${REPLIT_DEV_DOMAIN}/api/auth/google/callback`
-    : "http://localhost:8080/api/auth/google/callback";
-
   passport.use(
     new GoogleStrategy(
-      { clientID: GOOGLE_CLIENT_ID, clientSecret: GOOGLE_CLIENT_SECRET, callbackURL, scope: ["profile", "email"] },
+      {
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
+        callbackURL: "/api/auth/google/callback",
+        proxy: true,
+        scope: ["profile", "email"],
+      },
       async (_accessToken, _refreshToken, profile, done) => {
         try {
           const email = profile.emails?.[0]?.value;
@@ -85,9 +87,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
     (req, res) => {
       const user = req.user as typeof usersTable.$inferSelect;
       const token = signToken(user.id);
-      const frontendBase = REPLIT_DEV_DOMAIN
-        ? `https://${REPLIT_DEV_DOMAIN}`
-        : "http://localhost:24816";
+      const frontendBase = `${req.protocol}://${req.get("host")}`;
       res.redirect(`${frontendBase}/?token=${token}`);
     }
   );
