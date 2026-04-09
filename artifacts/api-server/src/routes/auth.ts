@@ -18,6 +18,21 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REPLIT_DEV_DOMAIN = process.env.REPLIT_DEV_DOMAIN;
 
+if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+  router.get("/auth/google", (_req, res) => {
+    const frontendBase = REPLIT_DEV_DOMAIN
+      ? `https://${REPLIT_DEV_DOMAIN}`
+      : "http://localhost:24816";
+    res.redirect(`${frontendBase}/login?error=google_not_configured`);
+  });
+  router.get("/auth/google/callback", (_req, res) => {
+    const frontendBase = REPLIT_DEV_DOMAIN
+      ? `https://${REPLIT_DEV_DOMAIN}`
+      : "http://localhost:24816";
+    res.redirect(`${frontendBase}/login?error=google_not_configured`);
+  });
+}
+
 if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
   const callbackURL = REPLIT_DEV_DOMAIN
     ? `https://${REPLIT_DEV_DOMAIN}/api/auth/google/callback`

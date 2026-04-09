@@ -1,6 +1,6 @@
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLogin } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,26 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+    if (error === "google_not_configured") {
+      toast({
+        title: "Google sign-in not configured",
+        description: "Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to enable Google login.",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (error === "google_failed") {
+      toast({
+        title: "Google sign-in failed",
+        description: "Could not sign in with Google. Please try again or use email.",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   const loginMutation = useLogin({
     mutation: {
