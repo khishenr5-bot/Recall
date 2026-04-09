@@ -10,7 +10,12 @@ import {
   askQuestion,
   askLibraryQuestion,
   generateRabbitHole,
+  generateChapterSummary,
+  generateBookSummary,
 } from "../lib/ai";
+import { writeFileSync, unlinkSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
 import {
   SummarizeBody,
   SuggestQuestionsBody,
@@ -39,11 +44,84 @@ router.post("/summarize", optionalAuth, upload.single("file"), async (req, res):
     const ext = filename.split(".").pop()?.toLowerCase();
     let content = "";
 
+    // EPUB book handling
+    if (ext === "epub" || req.file.mimetype === "application/epub+zip") {
+      const tmpPath = join(tmpdir(), `recall-${Date.now()}.epub`);
+      try {
+        writeFileSync(tmpPath, req.file.buffer);
+        const EPub = (await import("epub2")).default;
+        const epub = await (EPub as any).createAsync(tmpPath);
+
+        const bookTitle = epub.metadata?.title || filename.replace(/\.epub$/i, "");
+        const author = epub.metadata?.creator || epub.metadata?.author || "";
+
+        // Get all content items in reading order
+        const flow: any[] = epub.flow ?? [];
+        const chapters: Array<{ title: string; text: string }> = [];
+
+        for (const item of flow) {
+          try {
+            const raw: string = await epub.getChapterRawAsync(item.id);
+            // Strip HTML tags
+            const text = raw
+              .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+              .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+              .replace(/<[^>]+>/g, " ")
+              .replace(/&nbsp;/g, " ")
+              .replace(/&amp;/g, "&")
+              .replace(/&lt;/g, "<")
+              .replace(/&gt;/g, ">")
+              .replace(/&quot;/g, '"')
+              .replace(/\s+/g, " ")
+              .trim();
+            if (text.length > 200) {
+              chapters.push({ title: item.title || `Chapter ${chapters.length + 1}`, text });
+            }
+          } catch {}
+        }
+
+        if (chapters.length === 0) throw new Error("No readable chapters found");
+
+        req.log.info({ bookTitle, chapters: chapters.length }, "Summarizing EPUB book");
+
+        // Summarise each chapter in sequence (parallelising would hit rate limits)
+        const chapterSummaries: Array<{ title: string; verdict: string; bullets: string[] }> = [];
+        for (const ch of chapters) {
+          const s = await generateChapterSummary(ch.text, ch.title, bookTitle);
+          chapterSummaries.push({ title: ch.title, ...s });
+        }
+
+        const bookSummary = await generateBookSummary(bookTitle, author, chapterSummaries);
+
+        unlinkSync(tmpPath);
+
+        res.json({
+          title: bookTitle,
+          verdict: bookSummary.verdict,
+          bullets: bookSummary.bullets,
+          articleText: chapters.map(c => c.text).join("\n\n").slice(0, 10000),
+          language: lang,
+          recallScore: bookSummary.recallScore,
+          credibilityScore: bookSummary.credibilityScore,
+          credibilityVerdict: bookSummary.credibilityVerdict,
+          url: "",
+          sourceType: "file" as const,
+          bookAuthor: author,
+          chapterCount: chapterSummaries.length,
+          chapters: chapterSummaries,
+        });
+        return;
+      } catch (err) {
+        try { unlinkSync(tmpPath); } catch {}
+        res.status(400).json({ error: "Could not parse EPUB file. Make sure it's a valid EPUB book." });
+        return;
+      }
+    }
+
     if (ext === "txt") {
       content = req.file.buffer.toString("utf-8");
     } else if (ext === "pdf" || ext === "docx") {
       // For PDF/DOCX we extract readable text via toString (basic fallback)
-      // A production app would use pdf-parse / mammoth, but buffer text works for now
       content = req.file.buffer.toString("utf-8").replace(/[^\x20-\x7E\n\t]/g, " ").replace(/\s+/g, " ").trim();
     } else {
       content = req.file.buffer.toString("utf-8");

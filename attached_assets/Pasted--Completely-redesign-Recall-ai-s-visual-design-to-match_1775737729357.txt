@@ -1,0 +1,126 @@
+"Completely redesign Recall.ai's visual design to match 'The Neural Archive' design system — a premium, futuristic knowledge intelligence interface. This is NOT a SaaS dashboard. It is a high-end editorial experience that feels like a private cognitive library.
+Design System to implement exactly:
+Color Tokens (CSS variables — apply globally)
+css--surface: #060e20;
+--surface-bright: #1f2b49;
+--surface-low: #091328;
+--surface-mid: #0f1930;
+--surface-high: #141f38;
+--surface-highest: #192540;
+--on-surface: #dee5ff;
+--on-surface-muted: #8892b0;
+--primary: #a3a6ff;
+--primary-container: #6366f1;
+--secondary: #53ddfc;
+--tertiary: #c180ff;
+--outline-variant: rgba(64, 72, 93, 0.15);
+--error: #ff6b6b;
+Typography
+Import Google Fonts: Manrope (display/headlines) and Inter (body/labels).
+
+Display: Manrope, 3.5rem, weight 700 — hero moments only
+Headlines: Manrope, 1.5-2rem, weight 600
+Body: Inter, 0.875-1rem, weight 400
+Labels/Metadata: Inter, 0.6875rem, ALL CAPS, letter-spacing 0.08em, weight 500
+
+Critical Design Rules
+
+NO 1px solid borders for sectioning — use background color shifts between surface tokens
+Ghost borders only: rgba(64, 72, 93, 0.15) when absolutely needed for accessibility
+Cards: background surface-high, 24-32px padding, 0.5rem border-radius, NO dividers
+Glassmorphism on all modals and floating panels: backdrop-filter blur(12px), semi-transparent surface-mid background
+Primary CTAs: linear-gradient from #a3a6ff to #6366f1
+Input focus: primary color border + 8px glow rgba(163, 166, 255, 0.15)
+Hover states: surface-bright background (#1f2b49)
+Ambient shadows on floating elements: 0 16px 48px rgba(163, 166, 255, 0.06)
+NO hard corners — minimum 0.375rem border-radius everywhere
+Metadata labels in ALL CAPS with increased letter spacing
+
+Page-by-Page Redesign:
+Home Page (/)
+
+Full viewport dark background: #060e20
+Subtle animated neural network particle canvas behind the hero (small dots connected by lines, slow movement)
+Beta badge at top center: small pill with cyan dot + 'NEURAL ENGINE V2.4' in label style
+Hero headline: Manrope 3.5rem bold — 'Your Collective Intelligence, Organized.' with 'Organized.' in gradient text (#a3a6ff to #c180ff)
+Subheading: Inter, muted color, centered, 2 lines max
+URL input: surface-highest background, ghost border, 60px height, rounded-full, link icon left, mic icon right, gradient 'Summarise & Connect' button attached right
+Below input: animated mini knowledge graph preview — glowing nodes connected by lines showing the concept of connections
+After summarising: result shown in a glassmorphism panel with ARTICLE SUMMARY chip, read time, large Manrope title, AI SYNTHESIS badge, verdict as large editorial paragraph, KEY TAKEAWAYS section with cyan checkmark bullets, semantic tags as violet chips, INTERCONNECTED INSIGHTS sidebar showing related notes
+
+Navigation Bar
+
+Background: #060e20 with no border — blends into page
+Logo: Recall.ai in Manrope bold white
+Nav links: Library, Graph, Insights — active link has primary color with subtle underline
+Right side: search bar (surface-highest, ghost border, search icon), avatar circle
+No box shadow, no bottom border — navbar floats
+
+Left Sidebar (Library/Insights pages)
+
+Background: #060e20 — same as page, defined by content not borders
+Top: workspace name 'The Neural Archive' in bold with a colored square icon, 'SECOND BRAIN' label below in cyan, ALL CAPS
+Nav items: All Notes, Recent, Favorites, Archived, Trash with icons — active item has surface-bright background with left accent bar in primary color
+Bottom: gradient 'Capture Insight' button, Settings, Help
+
+Library Page (/saved)
+
+Page title: 'Library' in Manrope 3rem
+Subtitle: '{count} Knowledge blocks preserved in your neural collective.' in muted Inter
+Controls row: Filter, This Month, Tags buttons — ghost style, and grid/list view toggle
+Search bar: full width, surface-highest, 'Perform a semantic search across your collective...' placeholder
+Article cards: masonry grid layout (3 columns desktop, 2 tablet, 1 mobile)
+
+Each card: surface-high background, 24px padding, no border
+Top: content type badge (INSIGHT PAPER / YOUTUBE / PDF) in label style + relevance score
+Title: Manrope 1.25rem bold
+Summary: Inter body, 3 lines, muted color
+Bottom: semantic tags as small violet chips + date
+Hover: surface-bright background, smooth transition
+
+
+Selected state: cards show a cyan checkbox overlay, batch actions bar appears at top (Move, Export, Delete)
+
+Article Detail / Insight Page
+
+3-column layout: left sidebar, main content, right panel
+Main content:
+
+ARTICLE SUMMARY chip + read time at top
+Large Manrope title
+AI SYNTHESIS BY RECALL.AI badge with confidence level (High Confidence Insight) in cyan
+Large editorial body text for the verdict
+KEY TAKEAWAYS section: '—' dash header in primary, each bullet has colored keyword: rest of text in body
+Bottom actions: Add to Research Project, Share Insight, Edit Summary
+
+
+Right panel (INTERCONNECTED INSIGHTS):
+
+Related Notes section: cards with NOTE/PODCAST type chip, date, title, 2-line description
+Semantic Tags: violet hashtag chips
+Deep Dive Suggestions: large card with background image, suggested article title, Open Reading button
+
+
+
+Knowledge Graph Page (/graph)
+
+Full black canvas: #060e20
+D3.js force graph with glowing nodes
+Nodes: cyan (#53ddfc) and violet (#c180ff) circles with soft pulse glow
+Edges: rgba(163, 166, 255, 0.2) lines
+Active node: primary border with 10% opacity spread, glassmorphism tooltip
+Right panel slides in when node clicked: ACTIVE CONTEXT chip, article title in Manrope large, AI SYNTHESISED SUMMARY section with glassmorphism card, KEY INSIGHTS list, LINKED SOURCES with favicon + domain, Expand to Workspace button
+Controls: zoom in/out in surface-highest floating panel bottom right
+Perspective toggle: Temporal / Conceptual tabs at top center
+
+Animations & Micro-interactions
+
+Page transitions: fade in, 200ms
+Card hover: translateY(-2px) + shadow increase, 150ms
+Button press: scale(0.97), 100ms
+Input focus: border glow appears with 200ms ease
+Node pulse: infinite scale animation 1→1.15→1, 2s ease
+Particle canvas: requestAnimationFrame, 60fps, slow drift
+Skeleton loading: shimmer animation from surface-low to surface-bright
+
+Apply this redesign to ALL pages — home, library, article detail, graph, insights, settings, auth pages. Every component must match this design system. Remove all previous light mode styles — this app is dark mode only with an optional light toggle that inverts to a softer cream/ivory theme."

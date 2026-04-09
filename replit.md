@@ -2,7 +2,7 @@
 
 ## Overview
 
-A full-stack AI content intelligence app. Users paste any URL (articles, YouTube videos, PDFs) and get an AI-generated verdict on whether it's worth reading, dynamic bullet summaries, and can ask questions about content. Includes Learning Tools (flashcards, quiz mode, infographic), Slide Deck Generator, Deep Research mode, full data export, RSS feed subscriptions, reading status tracking + streaks, personal notes/annotations, and Recall Wrapped annual review. Builds a personal second brain over time.
+A full-stack AI content intelligence app. Users paste any URL (articles, YouTube videos, PDFs, EPUBs) and get an AI-generated verdict on whether it's worth reading, dynamic bullet summaries, and can ask questions about content. Includes Learning Tools (flashcards, quiz mode, infographic), Slide Deck Generator, Deep Research mode, full data export (JSON/CSV/Markdown/ZIP), import, RSS feed subscriptions, reading status tracking + streaks, personal notes/annotations, Recall Wrapped annual review, Teams workspaces, Living Documents (change tracking), Notion integration, and EPUB book summarization with per-chapter summaries.
 
 ## Stack
 
@@ -23,7 +23,7 @@ A full-stack AI content intelligence app. Users paste any URL (articles, YouTube
 ## Architecture
 
 ### Frontend (artifacts/recall-web)
-- Pages: Home (/), Saved Library (/saved), Highlights (/highlights), Insights (/insights), Knowledge Graph (/graph), Creator Tools (/create), Public Share (/share/:token), Settings (/settings), Auth (/login, /register), RSS Feeds (/feeds), Recall Wrapped (/wrapped/:year)
+- Pages: Home (/), Saved Library (/saved), Highlights (/highlights), Insights (/insights), Knowledge Graph (/graph), Creator Tools (/create), Public Share (/share/:token), Settings (/settings), Auth (/login, /register), RSS Feeds (/feeds), Recall Wrapped (/wrapped/:year), Teams (/teams)
 - AuthContext in src/lib/auth.tsx — manages JWT token in localStorage, calls setAuthTokenGetter for API requests
 - Dark mode via ThemeProvider with localStorage persistence
 - Recharts for Reading DNA donut chart and Knowledge Graph visualization
@@ -42,6 +42,11 @@ Routes:
 - `notes.*` — Personal notes per article (upsert/delete, all-notes fetch)
 - `streak.*` — Daily streak check/update, weekly reading goal, status updates (unread/reading/completed)
 - `wrapped.*` — Annual reading review data (topics, streak, highlights, source breakdown)
+- `teams.*` — Create/join teams with invite codes, shared library, AI Q&A across team articles
+- `living-documents.*` — Track content changes (MD5 hash), re-summarize on significant change, changeSummary field
+- `notion.*` — OAuth connect/callback, sync individual articles or all, disconnect
+- `export.*` — JSON, CSV, Markdown single file, ZIP archive (one .md per article), import JSON
+- `summarize.*` — EPUB parsing via epub2: temp file → chapters → per-chapter AI summaries → book-level summary
 
 ### Database Schema (lib/db/src/schema/)
 - `users` — email, password_hash, plan (free/pro), monthly_saves_count, saves_limit, preferred_language, daily_streak, best_streak, last_active_date, weekly_reading_goal

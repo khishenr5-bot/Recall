@@ -21,6 +21,7 @@ import Settings from "@/pages/settings";
 import ShareTarget from "@/pages/share-target";
 import Feeds from "@/pages/feeds";
 import Wrapped from "@/pages/wrapped";
+import Teams from "@/pages/teams";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/create" component={() => <ProtectedRoute><Layout><Create /></Layout></ProtectedRoute>} />
       <Route path="/settings" component={() => <ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
       <Route path="/feeds" component={() => <ProtectedRoute><Layout><Feeds /></Layout></ProtectedRoute>} />
+      <Route path="/teams" component={() => <ProtectedRoute><Layout><Teams /></Layout></ProtectedRoute>} />
       
       <Route component={() => <Layout><NotFound /></Layout>} />
     </Switch>

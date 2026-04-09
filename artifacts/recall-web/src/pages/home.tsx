@@ -335,7 +335,7 @@ export default function Home() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf,.docx,.txt"
+        accept=".pdf,.docx,.txt,.epub"
         className="hidden"
         onChange={handleFileChange}
       />

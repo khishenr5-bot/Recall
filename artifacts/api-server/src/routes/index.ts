@@ -14,6 +14,9 @@ import feedsRouter from "./feeds";
 import notesRouter from "./notes";
 import streakRouter from "./streak";
 import wrappedRouter from "./wrapped";
+import teamsRouter from "./teams";
+import livingDocsRouter from "./living-documents";
+import notionRouter from "./notion";
 
 const router: IRouter = Router();
 
@@ -32,5 +35,8 @@ router.use(feedsRouter);
 router.use(notesRouter);
 router.use(streakRouter);
 router.use(wrappedRouter);
+router.use(teamsRouter);
+router.use(livingDocsRouter);
+router.use(notionRouter);
 
 export default router;

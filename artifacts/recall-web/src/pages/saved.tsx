@@ -6,13 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, Brain, Shield, Trash2, Share2, MessageSquare, ChevronDown, Pencil, CheckCircle2, Circle, Clock3, Rss, Flame, Target, BookOpen } from "lucide-react";
+import { Loader2, Search, Brain, Shield, Trash2, Share2, MessageSquare, ChevronDown, Pencil, CheckCircle2, Circle, Clock3, Rss, Flame, Target, BookOpen, Users, Bell, RefreshCw, Zap, ChevronRight } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 
 type ReadingStatus = "unread" | "reading" | "completed";
 
@@ -120,6 +122,12 @@ export default function Saved() {
   const [answer, setAnswer] = useState("");
   const [articleStatuses, setArticleStatuses] = useState<Record<number, ReadingStatus>>({});
   const [notes, setNotes] = useState<Record<number, string>>({});
+  const [teams, setTeams] = useState<any[]>([]);
+  const [shareToTeamArticle, setShareToTeamArticle] = useState<{ id: number; title: string } | null>(null);
+  const [sharingTeamId, setSharingTeamId] = useState<number | null>(null);
+  const [trackChanges, setTrackChanges] = useState<Record<number, boolean>>({});
+  const [notionSyncedIds, setNotionSyncedIds] = useState<Set<number>>(new Set());
+  const [notionSyncingId, setNotionSyncingId] = useState<number | null>(null);
 
   const { data: savedData, isLoading: isLoadingSaved } = useGetSavedArticles({
     search: search || null,
@@ -144,9 +152,74 @@ export default function Saved() {
   useEffect(() => {
     if (!savedData?.articles) return;
     const map: Record<number, ReadingStatus> = {};
-    for (const a of savedData.articles) map[a.id] = (a as any).status ?? "unread";
+    const trackMap: Record<number, boolean> = {};
+    for (const a of savedData.articles) {
+      map[a.id] = (a as any).status ?? "unread";
+      trackMap[a.id] = (a as any).trackChanges !== false;
+    }
     setArticleStatuses(prev => ({ ...map, ...prev }));
+    setTrackChanges(prev => ({ ...trackMap, ...prev }));
   }, [savedData?.articles]);
+
+  // Load teams
+  useEffect(() => {
+    apiFetch("/api/teams/my").then(r => r.json()).then(d => setTeams(d.teams ?? [])).catch(() => {});
+  }, []);
+
+  // Load Notion synced article IDs
+  useEffect(() => {
+    apiFetch("/api/integrations/notion/status").then(r => r.json()).then(d => {
+      if (d.syncedArticleIds) setNotionSyncedIds(new Set(d.syncedArticleIds));
+    }).catch(() => {});
+  }, []);
+
+  const handleShareToTeam = async (teamId: number) => {
+    if (!shareToTeamArticle) return;
+    setSharingTeamId(teamId);
+    try {
+      const res = await apiFetch(`/api/teams/${teamId}/share`, {
+        method: "POST",
+        body: JSON.stringify({ articleId: shareToTeamArticle.id }),
+      });
+      if (!res.ok) { const d = await res.json(); toast({ title: d.error || "Failed to share", variant: "destructive" }); return; }
+      toast({ title: "Shared to team!" });
+      setShareToTeamArticle(null);
+    } catch {
+      toast({ title: "Failed to share", variant: "destructive" });
+    } finally {
+      setSharingTeamId(null);
+    }
+  };
+
+  const handleToggleTrackChanges = async (articleId: number, current: boolean) => {
+    const next = !current;
+    setTrackChanges(prev => ({ ...prev, [articleId]: next }));
+    try {
+      await apiFetch(`/api/articles/${articleId}/track-changes`, {
+        method: "PATCH",
+        body: JSON.stringify({ trackChanges: next }),
+      });
+    } catch {
+      setTrackChanges(prev => ({ ...prev, [articleId]: current }));
+    }
+  };
+
+  const handleNotionSync = async (articleId: number) => {
+    setNotionSyncingId(articleId);
+    try {
+      const res = await apiFetch(`/api/integrations/notion/sync`, {
+        method: "POST",
+        body: JSON.stringify({ articleId }),
+      });
+      if (!res.ok) { const d = await res.json(); toast({ title: d.error || "Sync failed", variant: "destructive" }); return; }
+      setNotionSyncedIds(prev => new Set([...prev, articleId]));
+      toast({ title: "Synced to Notion!" });
+    } catch {
+      toast({ title: "Notion sync failed", variant: "destructive" });
+    } finally {
+      setNotionSyncingId(null);
+    }
+  };
 
   const cycleStatus = async (articleId: number, current: ReadingStatus) => {
     const idx = STATUS_CYCLE.indexOf(current);
@@ -219,6 +292,30 @@ export default function Saved() {
   ];
 
   return (
+    <>
+    {/* Share to Team Dialog */}
+    <Dialog open={!!shareToTeamArticle} onOpenChange={open => !open && setShareToTeamArticle(null)}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /> Share to Team</DialogTitle>
+          <DialogDescription className="line-clamp-1">{shareToTeamArticle?.title}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2 mt-2">
+          {teams.length === 0 ? (
+            <div className="text-sm text-muted-foreground text-center py-4">
+              You haven't joined any teams yet. <Link href="/teams" className="text-primary underline">Create one</Link>
+            </div>
+          ) : (
+            teams.map(t => (
+              <Button key={t.id} variant="outline" className="w-full justify-start gap-2" onClick={() => handleShareToTeam(t.id)} disabled={!!sharingTeamId}>
+                {sharingTeamId === t.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Users className="h-4 w-4 text-primary" />}
+                {t.name} <span className="text-xs text-muted-foreground ml-auto">{t.memberCount} members</span>
+              </Button>
+            ))
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
     <div className="container mx-auto px-4 py-8 max-w-5xl space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -305,17 +402,40 @@ export default function Saved() {
             const status = articleStatuses[article.id] ?? (article as any).status ?? "unread";
             const sc = STATUS_CONFIG[status as ReadingStatus] ?? STATUS_CONFIG.unread;
             const hasNote = !!notes[article.id];
+            const isBook = article.sourceType === "file" && (article as any).chapterCount > 0;
+            const isUpdated = !!(article as any).contentChangedAt;
+            const isTrackingChanges = trackChanges[article.id] !== false;
+            const isNotionSynced = notionSyncedIds.has(article.id);
+            const chapters: Array<{ title: string; summary?: string; bullets?: string[] }> = (article as any).chapters ?? [];
             return (
               <Collapsible key={article.id}>
-                <Card className="overflow-hidden transition-all hover:shadow-md">
+                <Card className={`overflow-hidden transition-all hover:shadow-md ${isUpdated ? "border-amber-400 dark:border-amber-600" : ""}`}>
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start gap-4">
                       <div className="space-y-1 flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="secondary" className="text-xs">{article.sourceType}</Badge>
+                          {isBook ? (
+                            <Badge variant="secondary" className="text-xs gap-1 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200">
+                              <BookOpen className="h-2.5 w-2.5" /> Book
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">{article.sourceType}</Badge>
+                          )}
                           {(article as any).isRss && <Badge variant="outline" className="text-xs gap-1"><Rss className="h-2.5 w-2.5" />RSS</Badge>}
+                          {isUpdated && (
+                            <Badge variant="outline" className="text-xs gap-1 border-amber-400 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30">
+                              <Bell className="h-2.5 w-2.5" /> Updated
+                            </Badge>
+                          )}
+                          {isBook && (article as any).chapterCount > 0 && (
+                            <span className="text-xs text-muted-foreground">{(article as any).chapterCount} ch.</span>
+                          )}
+                          {(article as any).bookAuthor && (
+                            <span className="text-xs text-muted-foreground">by {(article as any).bookAuthor}</span>
+                          )}
                           <span className="text-xs text-muted-foreground">{new Date(article.createdAt).toLocaleDateString()}</span>
                           {hasNote && <Pencil className="h-3 w-3 text-primary/60" title="Has notes" />}
+                          {isNotionSynced && <Zap className="h-3 w-3 text-slate-400" title="Synced to Notion" />}
                         </div>
                         <CardTitle className="text-lg line-clamp-2">
                           {article.url ? (
@@ -324,7 +444,6 @@ export default function Saved() {
                         </CardTitle>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        {/* Status badge — click to cycle */}
                         <button
                           onClick={() => cycleStatus(article.id, status as ReadingStatus)}
                           className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all hover:opacity-80 ${sc.color}`}
@@ -354,6 +473,36 @@ export default function Saved() {
                   </CardContent>
                   <CollapsibleContent>
                     <div className="px-6 pb-4 pt-2 bg-muted/30 border-t space-y-4">
+                      {/* Updated content notice */}
+                      {isUpdated && (article as any).changeSummary && (
+                        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-sm">
+                          <div className="flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-400 mb-1">
+                            <Bell className="h-3.5 w-3.5" /> What changed
+                          </div>
+                          <p className="text-amber-700/80 dark:text-amber-300/80">{(article as any).changeSummary}</p>
+                        </div>
+                      )}
+
+                      {/* Book chapters */}
+                      {isBook && chapters.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5 text-amber-600" /> Chapters</h4>
+                          <div className="space-y-2">
+                            {chapters.map((ch, i) => (
+                              <div key={i} className="text-sm border rounded-lg p-2.5 bg-background">
+                                <p className="font-medium text-xs mb-1">{i + 1}. {ch.title}</p>
+                                {ch.summary && <p className="text-xs text-muted-foreground">{ch.summary}</p>}
+                                {ch.bullets && ch.bullets.length > 0 && (
+                                  <ul className="mt-1 space-y-0.5">
+                                    {ch.bullets.map((b: string, j: number) => <li key={j} className="text-xs text-muted-foreground">• {b}</li>)}
+                                  </ul>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <div>
                         <h4 className="text-sm font-semibold mb-2">Key Takeaways</h4>
                         <ul className="space-y-2 text-sm">
@@ -388,8 +537,28 @@ export default function Saved() {
                               ))}
                             </SelectContent>
                           </Select>
+                          {/* Track changes toggle */}
+                          <div className="flex items-center gap-1.5 ml-1" title="Track for content changes">
+                            <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                            <Switch
+                              checked={isTrackingChanges}
+                              onCheckedChange={() => handleToggleTrackChanges(article.id, isTrackingChanges)}
+                              className="scale-75"
+                            />
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {teams.length > 0 && (
+                            <Button variant="outline" size="sm" className="h-8 text-xs gap-1"
+                              onClick={() => setShareToTeamArticle({ id: article.id, title: article.title })}>
+                              <Users className="h-3 w-3" /> Team
+                            </Button>
+                          )}
+                          <Button variant="outline" size="sm" className="h-8 text-xs gap-1"
+                            onClick={() => handleNotionSync(article.id)} disabled={notionSyncingId === article.id || isNotionSynced}>
+                            {notionSyncingId === article.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
+                            {isNotionSynced ? "In Notion" : "Notion"}
+                          </Button>
                           <Button variant="outline" size="sm" className="h-8 text-xs"
                             onClick={() => shareMutation.mutate({ id: article.id })} disabled={shareMutation.isPending}>
                             <Share2 className="mr-1 h-3 w-3" /> Share
@@ -410,5 +579,6 @@ export default function Saved() {
         </div>
       )}
     </div>
+    </>
   );
 }

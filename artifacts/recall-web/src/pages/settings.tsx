@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
-import { Loader2, Moon, Sun, Monitor, AlertTriangle, Download, FileJson, FileText, Sheet, Target, Gift } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Loader2, Moon, Sun, Monitor, AlertTriangle, Download, FileJson, FileText, Sheet, Target, Gift, Link2, Upload, FileUp, Zap, CheckCircle2, XCircle } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Link } from "wouter";
 
@@ -24,6 +24,10 @@ export default function Settings() {
   const [exportLoading, setExportLoading] = useState<string | null>(null);
   const [weeklyGoal, setWeeklyGoal] = useState(7);
   const [goalSaving, setGoalSaving] = useState(false);
+  const [notionStatus, setNotionStatus] = useState<{ connected: boolean; workspaceName?: string; autoSync?: boolean } | null>(null);
+  const [notionSyncing, setNotionSyncing] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const importRef = useRef<HTMLInputElement>(null);
 
   const currentYear = new Date().getFullYear();
 
@@ -74,31 +78,88 @@ export default function Settings() {
     });
   };
 
-  const handleExport = async (format: "json" | "markdown" | "csv") => {
+  const handleExport = async (format: "json" | "markdown" | "csv" | "markdown-zip") => {
     setExportLoading(format);
     try {
       const token = localStorage.getItem("recall_token");
-      if (!token) { toast({ title: "Sign in required", description: "Please sign in to export your data.", variant: "destructive" }); return; }
-      const res = await fetch(`/api/export/${format}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (!token) { toast({ title: "Sign in required", variant: "destructive" }); return; }
+      const path = format === "markdown-zip" ? "/api/export/markdown-zip" : `/api/export/${format}`;
+      const res = await fetch(path, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error("Export failed");
       const contentDisposition = res.headers.get("Content-Disposition") ?? "";
       const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-      const filename = filenameMatch?.[1] ?? `recall-export.${format}`;
+      const ext = format === "markdown-zip" ? "zip" : format === "markdown" ? "md" : format;
+      const filename = filenameMatch?.[1] ?? `recall-export.${ext}`;
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
+      a.href = url; a.download = filename; a.click();
       URL.revokeObjectURL(url);
-      toast({ title: "Export ready", description: `Your ${format.toUpperCase()} file is downloading.` });
+      toast({ title: "Export ready", description: `Your ${format === "markdown-zip" ? "ZIP" : format.toUpperCase()} file is downloading.` });
     } catch {
       toast({ title: "Export failed", description: "Could not generate your export.", variant: "destructive" });
     } finally {
       setExportLoading(null);
     }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportLoading(true);
+    try {
+      const token = localStorage.getItem("recall_token");
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      const res = await fetch("/api/import/json", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error || "Import failed", variant: "destructive" }); return; }
+      toast({ title: `Imported ${data.imported} articles!`, description: `${data.total - data.imported} duplicates skipped.` });
+    } catch {
+      toast({ title: "Import failed", description: "Invalid JSON export file.", variant: "destructive" });
+    } finally {
+      setImportLoading(false);
+      if (importRef.current) importRef.current.value = "";
+    }
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem("recall_token");
+    if (!token) return;
+    fetch("/api/integrations/notion/status", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json()).then(d => { if (d.connected !== undefined) setNotionStatus(d); }).catch(() => {});
+  }, []);
+
+  const handleNotionSyncAll = async () => {
+    setNotionSyncing(true);
+    try {
+      const token = localStorage.getItem("recall_token");
+      const res = await fetch("/api/integrations/notion/sync-all", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const d = await res.json();
+      toast({ title: `Synced ${d.synced ?? 0} articles to Notion` });
+    } catch {
+      toast({ title: "Sync failed", variant: "destructive" });
+    } finally {
+      setNotionSyncing(false);
+    }
+  };
+
+  const handleNotionDisconnect = async () => {
+    if (!confirm("Disconnect Notion? Synced articles will remain in Notion.")) return;
+    const token = localStorage.getItem("recall_token");
+    await fetch("/api/integrations/notion/disconnect", {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setNotionStatus({ connected: false });
+    toast({ title: "Notion disconnected" });
   };
 
   return (
@@ -230,15 +291,15 @@ export default function Settings() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid sm:grid-cols-3 gap-3">
+          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
             <button
               onClick={() => handleExport("json")}
               disabled={exportLoading !== null}
-              className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border hover:border-primary/40 hover:bg-accent transition text-center disabled:opacity-60"
+              className="flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-border hover:border-primary/40 hover:bg-accent transition text-center disabled:opacity-60"
             >
               {exportLoading === "json" ? <Loader2 className="h-7 w-7 animate-spin text-primary" /> : <FileJson className="h-7 w-7 text-primary" />}
               <div>
-                <p className="font-semibold text-sm">JSON Export</p>
+                <p className="font-semibold text-sm">JSON</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Full structured data</p>
               </div>
             </button>
@@ -246,19 +307,31 @@ export default function Settings() {
             <button
               onClick={() => handleExport("markdown")}
               disabled={exportLoading !== null}
-              className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border hover:border-primary/40 hover:bg-accent transition text-center disabled:opacity-60"
+              className="flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-border hover:border-primary/40 hover:bg-accent transition text-center disabled:opacity-60"
             >
               {exportLoading === "markdown" ? <Loader2 className="h-7 w-7 animate-spin text-primary" /> : <FileText className="h-7 w-7 text-purple-500" />}
               <div>
                 <p className="font-semibold text-sm">Markdown</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Human-readable library</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Single .md file</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => handleExport("markdown-zip")}
+              disabled={exportLoading !== null}
+              className="flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-border hover:border-primary/40 hover:bg-accent transition text-center disabled:opacity-60"
+            >
+              {exportLoading === "markdown-zip" ? <Loader2 className="h-7 w-7 animate-spin text-primary" /> : <FileUp className="h-7 w-7 text-blue-500" />}
+              <div>
+                <p className="font-semibold text-sm">ZIP Archive</p>
+                <p className="text-xs text-muted-foreground mt-0.5">One .md per article</p>
               </div>
             </button>
 
             <button
               onClick={() => handleExport("csv")}
               disabled={exportLoading !== null}
-              className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border hover:border-primary/40 hover:bg-accent transition text-center disabled:opacity-60"
+              className="flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-border hover:border-primary/40 hover:bg-accent transition text-center disabled:opacity-60"
             >
               {exportLoading === "csv" ? <Loader2 className="h-7 w-7 animate-spin text-primary" /> : <Sheet className="h-7 w-7 text-emerald-500" />}
               <div>
@@ -271,6 +344,69 @@ export default function Settings() {
           <p className="text-xs text-muted-foreground pt-1">
             Exports include all your saved articles, highlights, and collections. Sign in is required.
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Notion Integration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Link2 className="h-5 w-5 text-slate-600" />
+            Notion Integration
+          </CardTitle>
+          <CardDescription>Connect Notion to automatically sync your summaries to a Notion database.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {notionStatus?.connected ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Connected{notionStatus.workspaceName ? ` to ${notionStatus.workspaceName}` : ""}</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button onClick={handleNotionSyncAll} disabled={notionSyncing} className="gap-2">
+                  {notionSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                  Sync All Articles
+                </Button>
+                <Button variant="outline" onClick={handleNotionDisconnect} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/5">
+                  <XCircle className="h-4 w-4" /> Disconnect
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">You need a Notion OAuth connection. Set <code className="bg-muted px-1 rounded text-xs">NOTION_CLIENT_ID</code> and <code className="bg-muted px-1 rounded text-xs">NOTION_CLIENT_SECRET</code> to enable OAuth.</p>
+              <Button
+                onClick={() => window.location.href = "/api/integrations/notion/connect"}
+                className="gap-2"
+              >
+                <Link2 className="h-4 w-4" /> Connect Notion
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Import Data */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Import Data
+          </CardTitle>
+          <CardDescription>Restore your library from a Recall JSON export file.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => importRef.current?.click()} disabled={importLoading} className="gap-2">
+              {importLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              Choose JSON Export File
+            </Button>
+            <span className="text-xs text-muted-foreground">Duplicates are automatically skipped.</span>
+          </div>
+          <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
         </CardContent>
       </Card>
 

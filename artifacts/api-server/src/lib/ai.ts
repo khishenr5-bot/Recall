@@ -442,3 +442,73 @@ Return ONLY JSON, no explanation:
     };
   }
 }
+
+export async function generateText(prompt: string): Promise<string> {
+  const message = await anthropic.messages.create({
+    model: "claude-haiku-4-5",
+    max_tokens: 512,
+    messages: [{ role: "user", content: prompt }],
+  });
+  const block = message.content[0];
+  return block.type === "text" ? block.text.trim() : "";
+}
+
+export async function generateChapterSummary(chapterText: string, chapterTitle: string, bookTitle: string): Promise<{ verdict: string; bullets: string[] }> {
+  const message = await anthropic.messages.create({
+    model: "claude-haiku-4-5",
+    max_tokens: 1024,
+    messages: [{
+      role: "user",
+      content: `You are summarising chapter "${chapterTitle}" of the book "${bookTitle}". Provide:
+1. A "verdict" — a 2-sentence summary of the chapter's main point
+2. "bullets" — 3-5 key takeaways as a JSON array of strings
+
+Respond ONLY with valid JSON: { "verdict": "...", "bullets": ["...", ...] }
+
+Chapter text (first 8000 chars):
+${chapterText.slice(0, 8000)}`
+    }],
+  });
+  const text = message.content[0].type === "text" ? message.content[0].text : "";
+  try {
+    const clean = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+    return JSON.parse(clean);
+  } catch {
+    return { verdict: chapterTitle, bullets: [] };
+  }
+}
+
+export async function generateBookSummary(
+  bookTitle: string, author: string,
+  chapterSummaries: Array<{ title: string; verdict: string; bullets: string[] }>
+): Promise<{ verdict: string; bullets: string[]; recallScore: number; credibilityScore: number; credibilityVerdict: string }> {
+  const context = chapterSummaries.map((c, i) => `Chapter ${i + 1}: ${c.title}\n${c.verdict}`).join("\n\n");
+  const message = await anthropic.messages.create({
+    model: "claude-sonnet-4-5",
+    max_tokens: 2048,
+    messages: [{
+      role: "user",
+      content: `You are summarising the entire book "${bookTitle}" by ${author || "Unknown"}. Based on chapter summaries:
+
+${context}
+
+Provide a comprehensive book summary as JSON: {
+  "verdict": "3-sentence overall book summary",
+  "bullets": ["5-7 key takeaways from the whole book"],
+  "recallScore": <1-10 how memorable and impactful the book is>,
+  "credibilityScore": <1-10 based on author authority and evidence>,
+  "credibilityVerdict": "short credibility note"
+}
+
+Respond ONLY with valid JSON.`
+    }],
+  });
+  const text = message.content[0].type === "text" ? message.content[0].text : "";
+  try {
+    const clean = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+    const parsed = JSON.parse(clean);
+    return { verdict: parsed.verdict ?? "", bullets: parsed.bullets ?? [], recallScore: parsed.recallScore ?? 7, credibilityScore: parsed.credibilityScore ?? 7, credibilityVerdict: parsed.credibilityVerdict ?? "" };
+  } catch {
+    return { verdict: `${bookTitle} by ${author}`, bullets: [], recallScore: 7, credibilityScore: 7, credibilityVerdict: "" };
+  }
+}
