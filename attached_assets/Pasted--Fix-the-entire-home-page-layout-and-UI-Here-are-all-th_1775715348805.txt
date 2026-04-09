@@ -1,0 +1,43 @@
+"Fix the entire home page layout and UI. Here are all the issues:
+1. Center the hero content vertically:
+The hero section (tagline + URL input + Summarize button) should be vertically centered on the screen when no result is showing — like a Google search page. Use min-height: calc(100vh - 64px) with flexbox center alignment so the input sits in the middle of the viewport, not at the top.
+2. Hero section improvements:
+
+Increase tagline font size to 56px on desktop, 36px on mobile
+Add a subtle animated gradient or glow behind 'Read less.' text
+Add a small subheading below tagline: 'Paste any URL, YouTube video, or document. Get the verdict instantly.'
+URL input should be wider — max-width 680px, height 56px, with rounded-full border radius
+Add microphone icon button inside the input on the right
+Add paperclip/file upload icon inside the input on the left
+Summarize button should be attached to the input on the right, not separate below
+Add 3 example content type chips below the input: '🎥 YouTube videos' '📄 Articles' '📎 PDFs' as subtle gray chips showing what Recall supports
+
+3. Summary result layout:
+
+After summarising, result card should be centered with max-width 720px
+Add the article title prominently at the top of the result in 24px bold
+Verdict box: purple left border, light purple background, ⚡ icon, verdict text 15px
+Key Takeaways section: proper heading, numbered bullets with purple circle numbers
+Suggested questions: wrap to multiple lines, each question on its own row as a full-width clickable chip with → arrow on right, clicking fills and focuses the Ask AI input
+Ask AI input: full width, proper placeholder 'Ask anything about this article...', send button attached right
+Action buttons row: Share and Save to Library side by side, centered, proper spacing
+
+4. Overall page improvements:
+
+Add a subtle grid or dot pattern background on the hero section
+Smooth scroll behavior
+Add a thin animated progress bar at the top of the page while summarising
+When result is showing, smoothly scroll down to reveal it
+Add a 'Summarise another' link above the result to clear and start fresh
+
+5. Navigation bar:
+
+Add subtle bottom border to nav
+Logo should be slightly larger
+Nav links should have hover underline animation
+Sign up button should be more prominent with a slight glow effect
+Add Import and Settings links to nav
+
+6. Footer:
+
+Add a minimal footer with: © 2026 Recall.ai · Distilling the web · Privacy · Terms"
