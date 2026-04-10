@@ -70,25 +70,42 @@
 }
 
 .light {
-  --surface: #F8F9FF;
-  --surface-bright: #e8eaf6;
-  --surface-low: #f0f2ff;
-  --surface-mid: #eef0fa;
-  --surface-high: #ffffff;
-  --surface-highest: #f5f6ff;
+  --surface: #FAFAF7;
+  --surface-bright: #F4F3EF;
+  --surface-low: #F2F2EE;
+  --surface-mid: #F4F3EF;
+  --surface-high: #FFFFFF;
+  --surface-highest: #F9F9F7;
   --on-surface: #1a1a2e;
-  --on-surface-muted: #5a5a7a;
+  --on-surface-muted: #6B7280;
   --primary: #6366f1;
   --primary-container: #4f46e5;
-  --secondary: #0891b2;
+  --secondary: #06B6D4;
   --tertiary: #9333ea;
-  --outline-variant: rgba(100, 116, 139, 0.2);
+  --outline-variant: rgba(99, 102, 241, 0.12);
   --error: #dc2626;
 }
 
 .light .glass {
   backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.light body {
+  background-image: radial-gradient(rgba(99, 102, 241, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.light header, .light aside {
+  background-color: var(--surface-bright) !important;
+  border-color: rgba(99, 102, 241, 0.1) !important;
+}
+
+.light .gradient-btn {
+  background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+  color: white !important;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3) !important;
 }
 
 @layer base {

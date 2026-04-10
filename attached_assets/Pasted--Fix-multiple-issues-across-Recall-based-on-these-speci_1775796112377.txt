@@ -1,0 +1,68 @@
+"Fix multiple issues across Recall based on these specific problems:
+1. CRITICAL BUG — Articles not showing in Library
+Articles are being saved (toast shows 'Article added to your library') but the Library page shows 0 articles. Debug and fix this: Check if the save endpoint is correctly writing to Supabase with the logged-in user's user_id. Check if the Library page is fetching from the correct endpoint with the correct auth token. Add console.log to both the save endpoint and the library fetch to verify data flow. The Library page must show all saved articles immediately after saving.
+2. Fix Light Mode — Make It Beautiful
+The current light mode is washed out and ugly. Redesign it completely:
+
+Background: warm cream #FAFAF7 with a subtle dot grid pattern (rgba(99, 102, 241, 0.06))
+Sidebar background: #F4F3EF
+Cards: pure white #FFFFFF with soft shadow 0 2px 12px rgba(0,0,0,0.06)
+Primary text: deep navy #1a1a2e
+Secondary text: #6B7280
+Primary accent: #6366F1 (indigo)
+Secondary accent: #06B6D4 (cyan)
+Input backgrounds: #F9F9F7 with #E5E7EB border
+Active sidebar item: white background with indigo left border and indigo text
+Navbar: white with subtle bottom shadow
+Primary buttons: indigo gradient #6366F1 to #4F46E5 with white text
+The home page in light mode: cream background, large hero text in deep navy, subtle indigo gradient on 'Organized.' word, floating dot particles in very subtle indigo
+
+3. Fix Dark Mode Home Page
+The dark mode home page title 'Your Collective Intelligence, Organized.' is barely visible — text is too light against dark background. Fix: first line 'Your Collective Intelligence,' in bright white #dee5ff, 'Organized.' in gradient text from #a3a6ff to #c180ff. Make the particle dots slightly more visible.
+4. Fix UI Copy Throughout — Plain English
+Replace ALL technical jargon with plain human language:
+
+'Data Streams' → 'RSS Feeds'
+'New Uplink' → 'Add RSS Feed'
+'Endpoint URL' → 'Paste RSS feed URL here'
+'Awaiting connection parameters' → 'No feeds added yet'
+'Sync Nodes' → 'Teams'
+'Initialize Node' → 'Create a team'
+'Node Designation' → 'Team name'
+'Establish Connection' → 'Join a team'
+'Access Cipher' → 'Enter invite code'
+'Active Networks' → 'Your teams'
+'No connected nodes' → 'You are not in any teams yet'
+'Extracts' → 'Highlights'
+'Isolated knowledge fragments and annotations' → 'Key passages and notes from your saved articles'
+'No Extracted Fragments' → 'No highlights yet'
+'Preserve key takeaways from blocks' → 'Highlight any bullet point from a saved article'
+'No Annotations' → 'No notes yet'
+'Attach cognitive notes to blocks' → 'Add personal notes to your saved articles'
+'Cognitive DNA' → 'Reading DNA'
+'Analysis of your cognitive intake patterns' → 'Understanding your reading habits'
+'Active Sequence' → 'Reading Streak'
+'Spaced Repetition Queue' → 'Review Today'
+'Re-assimilated' → 'Reviewed'
+'AI Synthesis Engine' → 'AI Mentor'
+'Detected Voids' → 'Knowledge Gaps'
+'Matrix Topology' → 'Knowledge Graph'
+'Spatial visualization of node relationships' → 'See how your saved articles connect to each other'
+'Ideation Matrix' → 'Content Planner'
+'Synthesize new artifacts from your neural library' → 'Create content from your saved articles'
+'Seed concept' → 'Enter a topic or idea'
+'Compile a slide deck from structural nodes' → 'Generate a presentation from your saved articles'
+'STRUCTURAL NODES (LINE SEPARATED)' → 'KEY POINTS (one per line)'
+'DECK TITLE' → 'PRESENTATION TITLE'
+'CENTRAL THESIS' → 'MAIN IDEA'
+'Compile Deck' → 'Generate Slides'
+'Synthesize' → 'Generate'
+
+5. Fix Graph Page
+The Knowledge Graph shows only 3 floating dots with no connections and no labels. Fix: After fetching the user's saved articles, use Claude to identify semantic connections between them and render a proper D3.js force-directed graph. Each node should show the article title on hover. Nodes connected by lines showing relationships. If user has fewer than 3 articles show a friendly empty state: 'Save at least 3 articles to see how your knowledge connects.'
+6. Fix Answer Formatting
+The AI answers in the 'Ask about this article' section show raw markdown with # Answer and bold syntax visible as plain text. Strip all markdown formatting from answers before displaying — convert bold to actual bold HTML, remove # headers, render as clean readable text.
+7. Fix Library Empty State
+When library is empty show a beautiful empty state instead of just nothing: large emoji or illustration, 'Your library is empty' in heading, 'Save your first article to get started — paste any URL on the home page' as subtitle, a 'Go to Home' button linking to /.
+8. Add dark mode toggle to navbar
+Add a sun/moon icon button in the top right of the navbar (next to the avatar). Clicking toggles between dark and light mode. Save preference to localStorage. The icon should be a sun in dark mode and a moon in light mode."

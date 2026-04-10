@@ -38,13 +38,13 @@ export default function Highlights() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetHighlightsQueryKey() });
-        toast({ title: "Fragment Purged" });
+        toast({ title: "Highlight deleted" });
       }
     }
   });
 
   const grouped = (highlights ?? []).reduce((acc, curr) => {
-    const title = curr.articleTitle || "Unidentified Block";
+    const title = curr.articleTitle || "Unknown Article";
     if (!acc[title]) acc[title] = [];
     acc[title].push(curr);
     return acc;
@@ -54,18 +54,18 @@ export default function Highlights() {
     <div className="container mx-auto px-4 py-10 max-w-5xl space-y-10">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
         <div>
-          <h1 className="text-[3rem] font-bold tracking-tight leading-none text-white flex items-center gap-3" style={{ fontFamily: "var(--app-font-display)" }}>
-            <Quote className="h-10 w-10 text-[var(--tertiary)] drop-shadow-[0_0_12px_rgba(193,128,255,0.6)]" /> Extracts
+          <h1 className="text-[3rem] font-bold tracking-tight leading-none text-[var(--on-surface)] flex items-center gap-3" style={{ fontFamily: "var(--app-font-display)" }}>
+            <Quote className="h-10 w-10 text-[var(--tertiary)] drop-shadow-[0_0_12px_rgba(193,128,255,0.6)]" /> Highlights
           </h1>
-          <p className="text-[var(--on-surface-muted)] mt-3 text-lg">Isolated knowledge fragments and annotations.</p>
+          <p className="text-[var(--on-surface-muted)] mt-3 text-lg">Key passages and notes from your saved articles.</p>
         </div>
 
         <div className="flex gap-2 p-1 bg-[var(--surface-high)] rounded-lg border border-[var(--outline-variant)]">
-          <button onClick={() => setTab("highlights")} className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${tab === "highlights" ? "bg-[var(--surface-bright)] text-white shadow-[0_0_12px_rgba(0,0,0,0.5)]" : "text-[var(--on-surface-muted)] hover:text-white"}`}>
+          <button onClick={() => setTab("highlights")} className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${tab === "highlights" ? "bg-[var(--surface-bright)] text-[var(--on-surface)] shadow-[0_0_12px_rgba(0,0,0,0.5)]" : "text-[var(--on-surface-muted)] hover:text-[var(--on-surface)]"}`}>
             Highlights
             {highlights && highlights.length > 0 && <span className="ml-2 text-xs bg-[var(--surface-mid)] px-2 py-0.5 rounded text-[var(--tertiary)]">{highlights.length}</span>}
           </button>
-          <button onClick={() => setTab("notes")} className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${tab === "notes" ? "bg-[var(--surface-bright)] text-white shadow-[0_0_12px_rgba(0,0,0,0.5)]" : "text-[var(--on-surface-muted)] hover:text-white"}`}>
+          <button onClick={() => setTab("notes")} className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${tab === "notes" ? "bg-[var(--surface-bright)] text-[var(--on-surface)] shadow-[0_0_12px_rgba(0,0,0,0.5)]" : "text-[var(--on-surface-muted)] hover:text-[var(--on-surface)]"}`}>
             Notes
             {notes.length > 0 && <span className="ml-2 text-xs bg-[var(--surface-mid)] px-2 py-0.5 rounded text-[var(--secondary)]">{notes.length}</span>}
           </button>
@@ -80,15 +80,15 @@ export default function Highlights() {
             </div>
           ) : !highlights || highlights.length === 0 ? (
             <div className="text-center py-32 rounded-[0.5rem] bg-[var(--surface-high)] border border-[var(--outline-variant)]">
-              <Quote className="mx-auto h-12 w-12 text-[var(--on-surface-muted)] opacity-30 mb-6" />
-              <h2 className="text-xl font-bold text-white mb-2" style={{ fontFamily: "var(--app-font-display)" }}>No Extracted Fragments</h2>
-              <p className="text-[var(--on-surface-muted)]">Preserve key takeaways from blocks to populate this directory.</p>
+              <div className="text-5xl mb-6">✨</div>
+              <h2 className="text-xl font-bold text-[var(--on-surface)] mb-2" style={{ fontFamily: "var(--app-font-display)" }}>No highlights yet</h2>
+              <p className="text-[var(--on-surface-muted)]">Highlight any bullet point from a saved article to save it here.</p>
             </div>
           ) : (
             <div className="space-y-12">
               {Object.entries(grouped).map(([title, groupHighlights]) => (
                 <div key={title} className="space-y-6">
-                  <h2 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: "var(--app-font-display)" }}>
+                  <h2 className="text-xl font-bold text-[var(--on-surface)] flex items-center gap-2" style={{ fontFamily: "var(--app-font-display)" }}>
                     <ChevronRight className="h-5 w-5 text-[var(--tertiary)]" /> {title}
                   </h2>
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -99,12 +99,12 @@ export default function Highlights() {
                         <p className="text-base text-[var(--on-surface)] leading-relaxed relative z-10 pl-6">"{highlight.bulletText}"</p>
                         {highlight.note && (
                           <div className="mt-4 pt-4 border-t border-[var(--outline-variant)] pl-6">
-                            <span className="label-caps text-[var(--on-surface-muted)] block mb-1">Annotation</span>
+                            <span className="label-caps text-[var(--on-surface-muted)] block mb-1">Your note</span>
                             <p className="text-sm text-[var(--on-surface)]">{highlight.note}</p>
                           </div>
                         )}
                         <Button variant="ghost" size="icon" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--error)] bg-[var(--error)]/10 hover:bg-[var(--error)]/20"
-                          onClick={() => { if (confirm("Purge fragment?")) deleteMutation.mutate({ id: highlight.id }); }}>
+                          onClick={() => { if (confirm("Delete this highlight?")) deleteMutation.mutate({ id: highlight.id }); }}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -125,9 +125,9 @@ export default function Highlights() {
             </div>
           ) : notes.length === 0 ? (
             <div className="text-center py-32 rounded-[0.5rem] bg-[var(--surface-high)] border border-[var(--outline-variant)]">
-              <Pencil className="mx-auto h-12 w-12 text-[var(--on-surface-muted)] opacity-30 mb-6" />
-              <h2 className="text-xl font-bold text-white mb-2" style={{ fontFamily: "var(--app-font-display)" }}>No Annotations</h2>
-              <p className="text-[var(--on-surface-muted)]">Attach cognitive notes to blocks in your library.</p>
+              <div className="text-5xl mb-6">📝</div>
+              <h2 className="text-xl font-bold text-[var(--on-surface)] mb-2" style={{ fontFamily: "var(--app-font-display)" }}>No notes yet</h2>
+              <p className="text-[var(--on-surface-muted)]">Add personal notes to your saved articles from the Library page.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -136,7 +136,7 @@ export default function Highlights() {
                   <div className="absolute top-0 left-0 w-1 h-full bg-[var(--secondary)]" />
                   <div className="flex items-center gap-3 mb-4">
                     <span className="label-caps bg-[var(--surface-bright)] px-2 py-1 rounded text-[var(--on-surface)] flex items-center gap-1.5">
-                      <BookOpen className="h-3 w-3 text-[var(--secondary)]" /> Block #{note.articleId}
+                      <BookOpen className="h-3 w-3 text-[var(--secondary)]" /> Article #{note.articleId}
                     </span>
                     <span className="text-xs text-[var(--on-surface-muted)]">{new Date(note.updatedAt).toLocaleDateString()}</span>
                   </div>

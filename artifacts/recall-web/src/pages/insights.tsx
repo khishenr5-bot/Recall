@@ -26,8 +26,8 @@ export default function Insights() {
     <div className="container mx-auto px-4 py-10 max-w-5xl space-y-10">
       <div className="flex flex-col md:flex-row justify-between gap-6 items-start md:items-end">
         <div>
-          <h1 className="text-[3rem] font-bold tracking-tight leading-none text-white" style={{ fontFamily: "var(--app-font-display)" }}>Insights</h1>
-          <p className="text-[var(--on-surface-muted)] mt-3 text-lg">Analysis of your cognitive intake patterns.</p>
+          <h1 className="text-[3rem] font-bold tracking-tight leading-none text-[var(--on-surface)]" style={{ fontFamily: "var(--app-font-display)" }}>Insights</h1>
+          <p className="text-[var(--on-surface-muted)] mt-3 text-lg">Understanding your reading habits.</p>
         </div>
         
         {streak && (
@@ -36,8 +36,8 @@ export default function Insights() {
               <Flame className="h-6 w-6 text-[#ff6b6b] drop-shadow-[0_0_8px_rgba(255,107,107,0.6)]" />
             </div>
             <div>
-              <p className="label-caps text-[var(--on-surface-muted)]">Active Sequence</p>
-              <p className="text-2xl font-bold leading-none mt-1">{streak.currentStreak} Cycles</p>
+              <p className="label-caps text-[var(--on-surface-muted)]">Reading Streak</p>
+              <p className="text-2xl font-bold leading-none mt-1 text-[var(--on-surface)]">{streak.currentStreak} days</p>
             </div>
           </div>
         )}
@@ -45,10 +45,11 @@ export default function Insights() {
 
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-[var(--surface-high)] rounded-[0.5rem] p-8 flex flex-col">
-          <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2" style={{ fontFamily: "var(--app-font-display)" }}>
+          <h2 className="text-xl font-bold text-[var(--on-surface)] mb-6 flex items-center gap-2" style={{ fontFamily: "var(--app-font-display)" }}>
             <BrainCircuit className="h-5 w-5 text-[var(--primary)]" />
-            Cognitive DNA
+            Reading DNA
           </h2>
+          <p className="text-sm text-[var(--on-surface-muted)] mb-4">A breakdown of the topics you read most.</p>
           <div className="flex-1 flex flex-col items-center justify-center min-h-[300px]">
             {dna && dna.topicBreakdown.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -64,22 +65,22 @@ export default function Insights() {
                     ))}
                   </Pie>
                   <RechartsTooltip 
-                    contentStyle={{ backgroundColor: 'var(--surface-mid)', borderColor: 'var(--outline-variant)', borderRadius: '0.5rem', color: '#fff' }}
-                    itemStyle={{ color: '#fff' }}
+                    contentStyle={{ backgroundColor: 'var(--surface-mid)', borderColor: 'var(--outline-variant)', borderRadius: '0.5rem', color: 'var(--on-surface)' }}
+                    itemStyle={{ color: 'var(--on-surface)' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-[var(--on-surface-muted)]">Insufficient data for sequence analysis.</p>
+              <p className="text-[var(--on-surface-muted)]">Save more articles to see your reading DNA.</p>
             )}
           </div>
         </div>
 
         <div className="space-y-6 flex flex-col">
           <div className="bg-[var(--surface-high)] rounded-[0.5rem] p-8 flex-1 border-t-2 border-t-[var(--secondary)]">
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2" style={{ fontFamily: "var(--app-font-display)" }}>
+            <h2 className="text-xl font-bold text-[var(--on-surface)] mb-6 flex items-center gap-2" style={{ fontFamily: "var(--app-font-display)" }}>
               <Library className="h-5 w-5 text-[var(--secondary)]" />
-              Spaced Repetition Queue
+              Review Today
             </h2>
             {dueReviews && dueReviews.length > 0 ? (
               <div className="space-y-3">
@@ -92,29 +93,29 @@ export default function Insights() {
                       onClick={() => completeReviewMutation.mutate({ id: review.id, data: { remembered: true } })}
                       disabled={completeReviewMutation.isPending}
                     >
-                      <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Re-assimilated
+                      <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Reviewed
                     </Button>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="flex items-center justify-center h-[120px] rounded-lg border border-dashed border-[var(--outline-variant)]">
-                <p className="text-[var(--on-surface-muted)]">Retention optimal. Queue empty.</p>
+                <p className="text-[var(--on-surface-muted)]">All caught up! Nothing to review today.</p>
               </div>
             )}
           </div>
 
           <div className="glass rounded-[0.5rem] p-8 border border-[var(--primary)]/30">
-            <h2 className="text-xl font-bold text-[var(--primary)] mb-4" style={{ fontFamily: "var(--app-font-display)" }}>AI Synthesis Engine</h2>
+            <h2 className="text-xl font-bold text-[var(--primary)] mb-4" style={{ fontFamily: "var(--app-font-display)" }}>AI Mentor</h2>
             {mentor ? (
               <div className="space-y-4">
                 <p className="text-sm leading-relaxed text-[var(--on-surface)]">{mentor.insights}</p>
                 {mentor.knowledgeGaps.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-[var(--outline-variant)]">
-                    <p className="label-caps text-[var(--on-surface-muted)] mb-3">Detected Voids</p>
+                    <p className="label-caps text-[var(--on-surface-muted)] mb-3">Knowledge Gaps</p>
                     <div className="flex flex-wrap gap-2">
                       {mentor.knowledgeGaps.map((gap, i) => (
-                        <span key={i} className="text-xs bg-[var(--surface-bright)] text-white px-3 py-1.5 rounded-full border border-[var(--outline-variant)] flex items-center">
+                        <span key={i} className="text-xs bg-[var(--surface-bright)] text-[var(--on-surface)] px-3 py-1.5 rounded-full border border-[var(--outline-variant)] flex items-center">
                           {gap.topic} <ArrowRight className="ml-1 h-3 w-3 text-[var(--primary)]" />
                         </span>
                       ))}
@@ -123,7 +124,7 @@ export default function Insights() {
                 )}
               </div>
             ) : (
-              <p className="text-sm text-[var(--on-surface-muted)]">Awaiting further intake to generate directives.</p>
+              <p className="text-sm text-[var(--on-surface-muted)]">Save more articles to get personalised AI recommendations.</p>
             )}
           </div>
         </div>

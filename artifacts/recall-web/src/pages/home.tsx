@@ -41,7 +41,10 @@ function ParticleCanvas() {
     let h = canvas.height = window.innerHeight;
 
     const particles: {x: number, y: number, vx: number, vy: number, color: string}[] = [];
-    const colors = ["rgba(83, 221, 252, 0.4)", "rgba(193, 128, 255, 0.4)"];
+    const isDark = document.documentElement.classList.contains("dark") || !document.documentElement.classList.contains("light");
+    const colors = isDark
+      ? ["rgba(83, 221, 252, 0.5)", "rgba(193, 128, 255, 0.5)"]
+      : ["rgba(99, 102, 241, 0.15)", "rgba(147, 51, 234, 0.12)"];
     
     for (let i = 0; i < 40; i++) {
       particles.push({
@@ -383,8 +386,8 @@ export default function Home() {
             <span className="label-caps text-[var(--on-surface-muted)]">NEURAL ENGINE V2.4</span>
           </div>
 
-          <h1 className="text-[3.5rem] font-bold tracking-tight leading-[1.1] text-white" style={{ fontFamily: 'var(--app-font-display)' }}>
-            Your Collective Intelligence,{" "}
+          <h1 className="text-[3.5rem] font-bold tracking-tight leading-[1.1]" style={{ fontFamily: 'var(--app-font-display)' }}>
+            <span style={{ color: 'var(--on-surface)' }}>Your Collective Intelligence,</span>{" "}
             <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(to right, var(--primary), var(--tertiary))' }}>
               Organized.
             </span>
@@ -559,9 +562,17 @@ export default function Home() {
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                       className="mt-4 p-5 rounded-lg border border-[var(--primary)] bg-[var(--primary)]/10 text-sm text-[var(--on-surface)] leading-relaxed"
-                    >
-                      {askAnswer}
-                    </motion.div>
+                      dangerouslySetInnerHTML={{
+                        __html: askAnswer
+                          .replace(/^#{1,6}\s+/gm, "")
+                          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                          .replace(/\*(.+?)\*/g, "<em>$1</em>")
+                          .replace(/`(.+?)`/g, "<code class='bg-[var(--surface-bright)] px-1 rounded text-[var(--primary)]'>$1</code>")
+                          .replace(/\n\n/g, "</p><p class='mt-3'>")
+                          .replace(/\n/g, "<br/>")
+                          .replace(/^/, "<p>").replace(/$/, "</p>")
+                      }}
+                    />
                   )}
                 </AnimatePresence>
               </div>

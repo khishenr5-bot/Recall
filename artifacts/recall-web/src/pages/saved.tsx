@@ -83,8 +83,8 @@ export default function Saved() {
   const [notionSyncedIds, setNotionSyncedIds] = useState<Set<number>>(new Set());
 
   const { data: savedData, isLoading: isLoadingSaved } = useGetSavedArticles({
-    search: search || null,
-    collection_id: collectionId || null,
+    ...(search ? { search } : {}),
+    ...(collectionId != null ? { collection_id: collectionId } : {}),
     limit: 50,
     ...(statusFilter !== "all" ? { status: statusFilter } as any : {}),
   });
@@ -247,9 +247,12 @@ export default function Saved() {
           </div>
         ) : savedData?.articles.length === 0 ? (
           <div className="text-center py-32 rounded-[0.5rem] bg-[var(--surface-high)] border border-[var(--outline-variant)]">
-            <Brain className="mx-auto h-12 w-12 text-[var(--on-surface-muted)] opacity-30 mb-6" />
-            <h3 className="text-xl font-bold text-white mb-2" style={{ fontFamily: "var(--app-font-display)" }}>Library empty</h3>
-            <p className="text-[var(--on-surface-muted)]">Analyze a URL or upload a file to get started.</p>
+            <div className="text-6xl mb-6">📚</div>
+            <h3 className="text-2xl font-bold text-[var(--on-surface)] mb-3" style={{ fontFamily: "var(--app-font-display)" }}>Your library is empty</h3>
+            <p className="text-[var(--on-surface-muted)] mb-8 max-w-sm mx-auto">Save your first article to get started — paste any URL on the home page to summarize and save it.</p>
+            <a href="/" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[var(--primary)] text-white font-medium hover:bg-[var(--primary-container)] transition-colors">
+              Go to Home
+            </a>
           </div>
         ) : (
           <div className="grid gap-6">
@@ -313,7 +316,7 @@ export default function Saved() {
                     <CollapsibleContent className="mt-6 pt-6 border-t border-[var(--outline-variant)]">
                       <div className="glass p-6 rounded-lg border border-[var(--outline-variant)] space-y-6">
                         <div>
-                          <h4 className="label-caps text-[var(--primary)] mb-4">Extracted Concepts</h4>
+                          <h4 className="label-caps text-[var(--primary)] mb-4">Key Points</h4>
                           <ul className="space-y-3">
                             {article.bullets.map((b, i) => (
                               <li key={i} className="flex items-start gap-3">
@@ -326,10 +329,10 @@ export default function Saved() {
                         
                         <div className="flex flex-wrap gap-2 pt-2">
                           <Button variant="outline" size="sm" onClick={() => setShareToTeamArticle({id: article.id, title: article.title})} className="bg-[var(--surface-mid)] hover:bg-[var(--surface-bright)] border-[var(--outline-variant)] text-[var(--on-surface)]">
-                            <Share2 className="h-3.5 w-3.5 mr-2" /> Distribute
+                            <Share2 className="h-3.5 w-3.5 mr-2" /> Share to Team
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => { if(confirm("Purge block?")) deleteMutation.mutate({ id: article.id }) }} className="bg-[var(--surface-mid)] hover:bg-[var(--error)]/20 border-[var(--outline-variant)] hover:border-[var(--error)]/50 text-[var(--error)]">
-                            <Trash2 className="h-3.5 w-3.5 mr-2" /> Purge
+                          <Button variant="outline" size="sm" onClick={() => { if(confirm("Delete this article?")) deleteMutation.mutate({ id: article.id }) }} className="bg-[var(--surface-mid)] hover:bg-[var(--error)]/20 border-[var(--outline-variant)] hover:border-[var(--error)]/50 text-[var(--error)]">
+                            <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
                           </Button>
                         </div>
                         
