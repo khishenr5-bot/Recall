@@ -49,14 +49,17 @@ function NeuralBackground() {
       document.documentElement.classList.contains("dark") ||
       !document.documentElement.classList.contains("light");
 
-    const NODE_COLOR = isDark ? "rgba(163, 166, 255, 0.6)" : "rgba(99, 102, 241, 0.25)";
+    const NODE_COLOR = isDark ? "rgba(163, 166, 255, 0.6)" : "rgba(99, 102, 241, 0.5)";
+    const NODE_RADIUS = isDark ? 2 : 2.5;
     const LINE_COLOR_BASE = isDark ? "83, 221, 252" : "99, 102, 241";
-    const LINE_MAX_ALPHA = isDark ? 0.15 : 0.08;
+    const LINE_MAX_ALPHA = isDark ? 0.15 : 0.2;
+    const MAX_DIST = isDark ? 150 : 180;
 
     type Node = { x: number; y: number; vx: number; vy: number };
     const nodes: Node[] = [];
 
-    for (let i = 0; i < 80; i++) {
+    const nodeCount = isDark ? 80 : 100;
+    for (let i = 0; i < nodeCount; i++) {
       const speed = () => (Math.random() - 0.5) * 0.8; // ±0.4 max
       nodes.push({ x: Math.random() * w, y: Math.random() * h, vx: speed(), vy: speed() });
     }
@@ -73,10 +76,15 @@ function NeuralBackground() {
           const dx = nodes[i].x - nodes[j].x;
           const dy = nodes[i].y - nodes[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 150) {
-            const alpha = LINE_MAX_ALPHA * (1 - dist / 150);
+          if (dist < MAX_DIST) {
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(${LINE_COLOR_BASE}, ${alpha.toFixed(3)})`;
+            // In light mode: very close nodes get a brighter cyan line for depth
+            if (!isDark && dist < 80) {
+              ctx.strokeStyle = `rgba(83, 221, 252, ${(0.35 * (1 - dist / 80)).toFixed(3)})`;
+            } else {
+              const alpha = LINE_MAX_ALPHA * (1 - dist / MAX_DIST);
+              ctx.strokeStyle = `rgba(${LINE_COLOR_BASE}, ${alpha.toFixed(3)})`;
+            }
             ctx.lineWidth = 1;
             ctx.moveTo(nodes[i].x, nodes[i].y);
             ctx.lineTo(nodes[j].x, nodes[j].y);
@@ -92,7 +100,7 @@ function NeuralBackground() {
         if (n.x < 0 || n.x > w) n.vx *= -1;
         if (n.y < 0 || n.y > h) n.vy *= -1;
         ctx.beginPath();
-        ctx.arc(n.x, n.y, 2, 0, Math.PI * 2);
+        ctx.arc(n.x, n.y, NODE_RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = NODE_COLOR;
         ctx.fill();
       }
