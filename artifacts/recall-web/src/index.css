@@ -48,12 +48,13 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ─── Dark mode (default) ─────────────────────────────── */
 :root, .dark {
   --surface: #060e20;
   --surface-bright: #1f2b49;
   --surface-low: #091328;
   --surface-mid: #0f1930;
-  --surface-high: #141f38;
+  --surface-high: #0f1930;
   --surface-highest: #192540;
   --on-surface: #dee5ff;
   --on-surface-muted: #8892b0;
@@ -61,7 +62,7 @@
   --primary-container: #6366f1;
   --secondary: #53ddfc;
   --tertiary: #c180ff;
-  --outline-variant: rgba(64, 72, 93, 0.15);
+  --outline-variant: rgba(64, 72, 93, 0.35);
   --error: #ff6b6b;
 
   --app-font-sans: 'Inter', sans-serif;
@@ -69,45 +70,77 @@
   --radius: 0.5rem;
 }
 
+/* Dark: sidebar and nav blend seamlessly with page */
+.dark aside {
+  border-right-color: transparent !important;
+}
+.dark header {
+  border-bottom-color: transparent !important;
+  background-color: #060e20 !important;
+}
+
+/* ─── Light mode ──────────────────────────────────────── */
 .light {
-  --surface: #FAFAF7;
-  --surface-bright: #F4F3EF;
-  --surface-low: #F2F2EE;
-  --surface-mid: #F4F3EF;
+  --surface: #F5F3EE;
+  --surface-bright: #EEECEA;
+  --surface-low: #F0EEE8;
+  --surface-mid: #EEECEA;
   --surface-high: #FFFFFF;
-  --surface-highest: #F9F9F7;
+  --surface-highest: #F0EEE8;
   --on-surface: #1a1a2e;
   --on-surface-muted: #6B7280;
   --primary: #6366f1;
   --primary-container: #4f46e5;
   --secondary: #06B6D4;
   --tertiary: #9333ea;
-  --outline-variant: rgba(99, 102, 241, 0.12);
+  --outline-variant: #D1CFC8;
   --error: #dc2626;
 }
 
-.light .glass {
-  backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-}
-
+/* Light: dot grid on page background */
 .light body {
-  background-image: radial-gradient(rgba(99, 102, 241, 0.06) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(99, 102, 241, 0.07) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
-.light header, .light aside {
-  background-color: var(--surface-bright) !important;
-  border-color: rgba(99, 102, 241, 0.1) !important;
+/* Light: nav bar white with subtle bottom border */
+.light header {
+  background-color: #FFFFFF !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
 }
 
+/* Light: sidebar darker cream with subtle right border */
+.light aside {
+  background-color: #EEECEA !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Light: glass cards */
+.light .glass {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Light: input field warm background */
+.light .input-glow {
+  background-color: #F0EEE8 !important;
+  border-color: #D1CFC8 !important;
+}
+
+/* Light: card shadows */
+.light [class*="surface-high"] {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Light: gradient button */
 .light .gradient-btn {
   background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
   color: white !important;
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3) !important;
 }
 
+/* ─── Base ────────────────────────────────────────────── */
 @layer base {
   html {
     background-color: var(--surface);
@@ -128,6 +161,7 @@
   }
 }
 
+/* ─── Utilities ───────────────────────────────────────── */
 .label-caps {
   font-family: var(--app-font-sans);
   font-size: 0.6875rem;

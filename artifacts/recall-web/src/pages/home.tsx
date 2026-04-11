@@ -48,7 +48,7 @@ function ParticleCanvas() {
     const particles: {x: number, y: number, vx: number, vy: number, color: string}[] = [];
     const isDark = document.documentElement.classList.contains("dark") || !document.documentElement.classList.contains("light");
     const colors = isDark
-      ? ["rgba(83, 221, 252, 0.5)", "rgba(193, 128, 255, 0.5)"]
+      ? ["rgba(83, 221, 252, 0.12)", "rgba(193, 128, 255, 0.12)"]
       : ["rgba(99, 102, 241, 0.15)", "rgba(147, 51, 234, 0.12)"];
     
     for (let i = 0; i < 40; i++) {
@@ -88,7 +88,10 @@ function ParticleCanvas() {
           
           if (dist < 150) {
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(163, 166, 255, ${0.1 * (1 - dist / 150)})`;
+            const lineAlpha = (isDark ? 0.08 : 0.06) * (1 - dist / 150);
+            ctx.strokeStyle = isDark
+              ? `rgba(83, 221, 252, ${lineAlpha})`
+              : `rgba(99, 102, 241, ${lineAlpha})`;
             ctx.lineWidth = 1;
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);

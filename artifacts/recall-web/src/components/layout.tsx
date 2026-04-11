@@ -73,7 +73,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <div className="relative">
                     <Brain className="h-7 w-7 text-[var(--secondary)] drop-shadow-[0_0_8px_rgba(83,221,252,0.5)]" />
                   </div>
-                  <span className="font-bold text-xl tracking-tight text-white" style={{ fontFamily: 'var(--app-font-display)' }}>Recall.ai</span>
+                  <span className="font-bold text-xl tracking-tight text-[var(--on-surface)]" style={{ fontFamily: 'var(--app-font-display)' }}>Recall.ai</span>
                 </Link>
                 {navLinks.map((link) => {
                   const isActive = location === link.href;
@@ -97,7 +97,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </Sheet>
           <Link href="/" className="flex items-center gap-2">
             <Brain className="h-6 w-6 text-[var(--secondary)] drop-shadow-[0_0_8px_rgba(83,221,252,0.5)]" />
-            <span className="font-bold text-lg tracking-tight text-white" style={{ fontFamily: 'var(--app-font-display)' }}>Recall.ai</span>
+            <span className="font-bold text-lg tracking-tight text-[var(--on-surface)]" style={{ fontFamily: 'var(--app-font-display)' }}>Recall.ai</span>
           </Link>
         </div>
 
@@ -165,7 +165,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="relative">
             <Brain className="h-7 w-7 text-[var(--secondary)] drop-shadow-[0_0_8px_rgba(83,221,252,0.5)] transition-transform group-hover:scale-105" />
           </div>
-          <span className="font-bold text-xl tracking-tight text-white" style={{ fontFamily: 'var(--app-font-display)' }}>Recall.ai</span>
+          <span className="font-bold text-xl tracking-tight text-[var(--on-surface)]" style={{ fontFamily: 'var(--app-font-display)' }}>Recall.ai</span>
         </Link>
         
         <nav className="flex-1 flex flex-col gap-1 px-3">
