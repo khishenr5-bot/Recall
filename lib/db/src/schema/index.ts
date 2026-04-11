@@ -4,3 +4,6 @@ export * from "./saved_articles";
 export * from "./highlights";
 export * from "./rss_feeds";
 export * from "./article_notes";
+export * from "./standalone_notes";
+export * from "./canvas_sessions";
+export * from "./research_reports";

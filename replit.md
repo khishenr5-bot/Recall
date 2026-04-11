@@ -23,7 +23,8 @@ A full-stack AI content intelligence app. Users paste any URL (articles, YouTube
 ## Architecture
 
 ### Frontend (artifacts/recall-web)
-- Pages: Home (/), Saved Library (/saved), Highlights (/highlights), Insights (/insights), Knowledge Graph (/graph), Creator Tools (/create), Public Share (/share/:token), Settings (/settings), Auth (/login, /register), RSS Feeds (/feeds), Recall Wrapped (/wrapped/:year), Teams (/teams)
+- Pages: Home (/), Saved Library (/saved), Notes (/notes), Strategy Canvas (/canvas), Highlights (/highlights), Insights (/insights), Knowledge Graph (/graph), Creator Tools (/create), Public Share (/share/:token), Settings (/settings), Auth (/login, /register), RSS Feeds (/feeds), Recall Wrapped (/wrapped/:year), Teams (/teams)
+- Home page has dual mode: "Analyze URL" (standard) and "Deep Research" (autonomous research mode that generates a full report using library as context)
 - AuthContext in src/lib/auth.tsx — manages JWT token in localStorage, calls setAuthTokenGetter for API requests
 - Dark mode via ThemeProvider with localStorage persistence
 - Recharts for Reading DNA donut chart and Knowledge Graph visualization

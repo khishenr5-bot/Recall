@@ -17,6 +17,8 @@ import wrappedRouter from "./wrapped";
 import teamsRouter from "./teams";
 import livingDocsRouter from "./living-documents";
 import notionRouter from "./notion";
+import researchRouter from "./research";
+import canvasRouter from "./canvas";
 
 const router: IRouter = Router();
 
@@ -38,5 +40,7 @@ router.use(wrappedRouter);
 router.use(teamsRouter);
 router.use(livingDocsRouter);
 router.use(notionRouter);
+router.use(researchRouter);
+router.use(canvasRouter);
 
 export default router;

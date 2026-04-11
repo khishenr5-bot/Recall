@@ -15,6 +15,11 @@ import {
   RefreshCw,
   X,
   CheckCircle2,
+  Search,
+  BookOpen,
+  Save,
+  ExternalLink,
+  ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
@@ -115,6 +120,7 @@ export default function Home() {
   const { user, login: setAuth } = useAuth();
   const { toast } = useToast();
 
+  const [inputMode, setInputMode] = useState<"analyze" | "research">("analyze");
   const [url, setUrl] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [summary, setSummary] = useState<any>(null);
@@ -123,6 +129,13 @@ export default function Home() {
   const [askAnswer, setAskAnswer] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isListening, setIsListening] = useState(false);
+
+  const [researchQuestion, setResearchQuestion] = useState("");
+  const [researchResult, setResearchResult] = useState<any | null>(null);
+  const [isResearching, setIsResearching] = useState(false);
+  const [isSavingReport, setIsSavingReport] = useState(false);
+  const [reportSaved, setReportSaved] = useState(false);
+  const researchResultRef = useRef<HTMLDivElement>(null);
 
   const resultRef = useRef<HTMLDivElement>(null);
   const askInputRef = useRef<HTMLInputElement>(null);
@@ -218,6 +231,49 @@ export default function Home() {
       submitSummarize(fd);
     } else if (url.trim()) {
       submitSummarize({ url: url.trim() });
+    }
+  };
+
+  const handleResearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!researchQuestion.trim()) return;
+    setIsResearching(true);
+    setResearchResult(null);
+    setReportSaved(false);
+    const token = localStorage.getItem("recall_token");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    try {
+      const res = await fetch(`${API_BASE}/research`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ question: researchQuestion }),
+      });
+      if (!res.ok) throw new Error("Research failed");
+      const data = await res.json();
+      setResearchResult(data);
+      setTimeout(() => researchResultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    } catch (err: any) {
+      toast({ title: "Research failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsResearching(false);
+    }
+  };
+
+  const handleSaveReport = async () => {
+    if (!researchResult) return;
+    setIsSavingReport(true);
+    const token = localStorage.getItem("recall_token");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    try {
+      await fetch(`${API_BASE}/research/save`, { method: "POST", headers, body: JSON.stringify(researchResult) });
+      setReportSaved(true);
+      toast({ title: "Report saved to your library!" });
+    } catch {
+      toast({ title: "Failed to save report", variant: "destructive" });
+    } finally {
+      setIsSavingReport(false);
     }
   };
 
@@ -393,7 +449,44 @@ export default function Home() {
             </span>
           </h1>
 
-          <form onSubmit={handleSummarize} className="relative flex items-center w-full max-w-[640px] mx-auto mt-8">
+          {/* Mode Tabs */}
+          <div className="flex items-center gap-1 p-1 bg-[var(--surface-high)] rounded-full border border-[var(--outline-variant)] w-fit mx-auto mt-8 mb-4">
+            <button
+              onClick={() => setInputMode("analyze")}
+              className={`px-5 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-2 ${inputMode === "analyze" ? "bg-[var(--surface-bright)] text-[var(--on-surface)] shadow-sm" : "text-[var(--on-surface-muted)] hover:text-[var(--on-surface)]"}`}
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Analyze URL
+            </button>
+            <button
+              onClick={() => setInputMode("research")}
+              className={`px-5 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-2 ${inputMode === "research" ? "bg-[var(--surface-bright)] text-[var(--on-surface)] shadow-sm" : "text-[var(--on-surface-muted)] hover:text-[var(--on-surface)]"}`}
+            >
+              <Search className="h-3.5 w-3.5" /> Deep Research
+            </button>
+          </div>
+
+          {inputMode === "research" ? (
+            <form onSubmit={handleResearch} className="relative w-full max-w-[640px] mx-auto space-y-3">
+              <div className="relative shadow-[0_16px_48px_rgba(163,166,255,0.06)]">
+                <input
+                  type="text"
+                  placeholder="Ask a research question, e.g. What is the best pricing strategy for B2B SaaS?"
+                  value={researchQuestion}
+                  onChange={e => setResearchQuestion(e.target.value)}
+                  className="input-glow w-full h-[60px] pl-5 pr-[140px] text-base rounded-full border border-[var(--outline-variant)] bg-[var(--surface-highest)] text-[var(--on-surface)] placeholder-[var(--on-surface-muted)] transition-all"
+                />
+                <Button
+                  type="submit"
+                  disabled={isResearching || !researchQuestion.trim()}
+                  className="gradient-btn absolute right-1 top-1 bottom-1 px-6 rounded-full font-medium tracking-wide border-none"
+                >
+                  {isResearching ? <Loader2 className="h-5 w-5 animate-spin" /> : "Research"}
+                </Button>
+              </div>
+              <p className="text-xs text-[var(--on-surface-muted)] text-center">Uses your saved library as context to produce a comprehensive research report.</p>
+            </form>
+          ) : (
+          <form onSubmit={handleSummarize} className="relative flex items-center w-full max-w-[640px] mx-auto">
             <div className="relative flex-1 flex items-center shadow-[0_16px_48px_rgba(163,166,255,0.06)]">
               <button
                 type="button"
@@ -448,8 +541,142 @@ export default function Home() {
               </Button>
             </div>
           </form>
+          )}
         </motion.div>
       </div>
+
+      {/* Research Result */}
+      <AnimatePresence>
+        {researchResult && (
+          <motion.div
+            ref={researchResultRef}
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="relative z-10 mx-auto max-w-[900px] px-4 pt-20 pb-24"
+          >
+            <div className="flex items-center justify-between mb-6 gap-4">
+              <button onClick={() => { setResearchResult(null); setResearchQuestion(""); }} className="flex items-center gap-2 text-[var(--on-surface-muted)] hover:text-[var(--primary)] transition-colors text-sm font-medium">
+                <Search className="h-4 w-4" /> New research
+              </button>
+              <Button onClick={handleSaveReport} disabled={isSavingReport || reportSaved} className={reportSaved ? "bg-[#50fa7b]/10 text-[#50fa7b] border border-[#50fa7b]/30 gap-2" : "gradient-btn gap-2"}>
+                {isSavingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : reportSaved ? <><CheckCircle2 className="h-4 w-4" /> Saved!</> : <><Save className="h-4 w-4" /> Save Report</>}
+              </Button>
+            </div>
+
+            <div className="glass rounded-2xl border border-[var(--outline-variant)] shadow-[0_16px_48px_rgba(163,166,255,0.08)] overflow-hidden">
+              {/* Header */}
+              <div className="px-8 py-6 bg-[var(--surface-high)] border-b border-[var(--outline-variant)]">
+                <div className="flex items-center gap-2 mb-3">
+                  <Search className="h-5 w-5 text-[var(--secondary)]" />
+                  <span className="label-caps text-[var(--secondary)]">Research Report</span>
+                </div>
+                <h2 className="text-2xl font-bold text-[var(--on-surface)]" style={{ fontFamily: "var(--app-font-display)" }}>{researchResult.question}</h2>
+              </div>
+
+              <div className="p-8 space-y-8">
+                {/* Executive Summary */}
+                <div className="p-6 rounded-xl bg-[var(--primary)]/10 border border-[var(--primary)]/30">
+                  <h3 className="label-caps text-[var(--primary)] mb-3">Executive Summary</h3>
+                  <p className="text-[var(--on-surface)] leading-relaxed">{researchResult.executiveSummary}</p>
+                </div>
+
+                {/* Sub-questions */}
+                {researchResult.subQuestions?.length > 0 && (
+                  <div>
+                    <h3 className="label-caps text-[var(--on-surface-muted)] mb-4">Key Questions Explored</h3>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {researchResult.subQuestions.map((q: string, i: number) => (
+                        <div key={i} className="flex items-start gap-3 p-4 bg-[var(--surface-high)] rounded-xl border border-[var(--outline-variant)]">
+                          <span className="text-[var(--secondary)] font-bold text-sm shrink-0">{i + 1}.</span>
+                          <p className="text-sm text-[var(--on-surface)] leading-relaxed">{q}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Findings */}
+                {researchResult.findings && (
+                  <div>
+                    <h3 className="label-caps text-[var(--on-surface-muted)] mb-4">Detailed Findings</h3>
+                    <div className="prose-custom text-[var(--on-surface)] leading-7 space-y-4 text-base">
+                      {researchResult.findings.split("\n\n").filter(Boolean).map((para: string, i: number) => (
+                        <p key={i} dangerouslySetInnerHTML={{
+                          __html: para
+                            .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                            .replace(/\[Article (\d+)\]/g, '<span class="inline-flex items-center px-2 py-0.5 rounded bg-[var(--secondary)]/15 text-[var(--secondary)] text-xs font-bold border border-[var(--secondary)]/30">[Article $1]</span>')
+                        }} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid sm:grid-cols-3 gap-6">
+                  {/* Knowledge Gaps */}
+                  {researchResult.knowledgeGaps?.length > 0 && (
+                    <div>
+                      <h3 className="label-caps text-[var(--error)] mb-3">Knowledge Gaps</h3>
+                      <ul className="space-y-2">
+                        {researchResult.knowledgeGaps.map((g: string, i: number) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-[var(--on-surface)]">
+                            <span className="text-[var(--error)] mt-1">→</span> {g}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Search Queries */}
+                  {researchResult.searchQueries?.length > 0 && (
+                    <div>
+                      <h3 className="label-caps text-[var(--tertiary)] mb-3">Search Queries</h3>
+                      <ul className="space-y-2">
+                        {researchResult.searchQueries.map((q: string, i: number) => (
+                          <li key={i} className="text-sm">
+                            <a href={`https://google.com/search?q=${encodeURIComponent(q)}`} target="_blank" rel="noreferrer"
+                              className="text-[var(--primary)] hover:text-[var(--tertiary)] flex items-start gap-1.5 transition-colors">
+                              <ExternalLink className="h-3.5 w-3.5 mt-0.5 shrink-0" /> {q}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Recommended Reads */}
+                  {researchResult.recommendedReads?.length > 0 && (
+                    <div>
+                      <h3 className="label-caps text-[var(--secondary)] mb-3">Read Next</h3>
+                      <ul className="space-y-2">
+                        {researchResult.recommendedReads.map((r: string, i: number) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-[var(--on-surface)]">
+                            <BookOpen className="h-3.5 w-3.5 text-[var(--secondary)] mt-0.5 shrink-0" /> {r}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sources from library */}
+                {researchResult.sources?.length > 0 && (
+                  <div className="pt-6 border-t border-[var(--outline-variant)]">
+                    <h3 className="label-caps text-[var(--on-surface-muted)] mb-3">From Your Library</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {researchResult.sources.map((s: { id: number; title: string }, i: number) => (
+                        <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-high)] border border-[var(--outline-variant)] rounded-lg text-xs font-medium text-[var(--on-surface)]">
+                          <ChevronRight className="h-3 w-3 text-[var(--primary)]" /> {s.title}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Result Section */}
       <AnimatePresence>

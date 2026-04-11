@@ -17,6 +17,8 @@ import {
   Users,
   Sun,
   Moon,
+  NotebookPen,
+  Layers,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -42,6 +44,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navLinks = [
     { href: "/saved", label: "Library", icon: BookMarked },
+    { href: "/notes", label: "Notes", icon: NotebookPen },
+    { href: "/canvas", label: "Strategy Canvas", icon: Layers },
     { href: "/feeds", label: "Feeds", icon: Rss },
     { href: "/teams", label: "Teams", icon: Users },
     { href: "/highlights", label: "Highlights", icon: Quote },

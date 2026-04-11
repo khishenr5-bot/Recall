@@ -3,6 +3,9 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import researchRouter from "./routes/research";
+import notesRouter from "./routes/notes";
+import canvasRouter from "./routes/canvas";
 
 const app: Express = express();
 
@@ -30,6 +33,10 @@ app.use(
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// Add these with your other app.use() calls
+app.use("/api", researchRouter);
+app.use("/api", notesRouter);
+app.use("/api", canvasRouter);
 
 app.use("/api", router);
 
