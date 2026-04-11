@@ -70,9 +70,10 @@
   --radius: 0.5rem;
 }
 
-/* Dark: sidebar and nav blend seamlessly with page */
+/* Dark: sidebar distinct but dark, nav seamless */
 .dark aside {
-  border-right-color: transparent !important;
+  background-color: #080D1A !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.04) !important;
 }
 .dark header {
   border-bottom-color: transparent !important;
@@ -109,9 +110,9 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
 }
 
-/* Light: sidebar darker cream with subtle right border */
+/* Light: sidebar warm gray, clearly distinct from page cream */
 .light aside {
-  background-color: #EEECEA !important;
+  background-color: #EEEAE0 !important;
   border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
 }
 
@@ -159,6 +160,55 @@
   * {
     border-color: var(--outline-variant);
   }
+}
+
+/* ─── Sidebar nav items ───────────────────────────────── */
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background 150ms ease, color 150ms ease;
+  position: relative;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+}
+
+/* Dark defaults */
+.dark .sidebar-nav-item {
+  color: #8892b0;
+}
+.dark .sidebar-nav-item:hover {
+  background: #0f1930;
+  color: #dee5ff;
+}
+.dark .sidebar-nav-item.active {
+  background: #141f38;
+  color: #a3a6ff;
+  font-weight: 600;
+  border-left-color: #a3a6ff;
+  padding-left: 13px;
+}
+
+/* Light defaults */
+.light .sidebar-nav-item {
+  color: #4A4A5A;
+}
+.light .sidebar-nav-item:hover {
+  background: #E0DDD4;
+  color: #1a1a2e;
+}
+.light .sidebar-nav-item.active {
+  background: #FFFFFF;
+  color: #6366f1;
+  font-weight: 600;
+  border-left-color: #6366f1;
+  padding-left: 13px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 /* ─── Utilities ───────────────────────────────────────── */

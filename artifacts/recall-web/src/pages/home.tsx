@@ -66,9 +66,18 @@ function NeuralBackground() {
 
     let raf: number;
 
+    const SIDEBAR_W = 240; // matches layout sidebar width
+
     function draw() {
       if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, w, h);
+
+      // Clip canvas to exclude the sidebar area on desktop
+      ctx.save();
+      const clipX = window.innerWidth >= 768 ? SIDEBAR_W : 0;
+      ctx.beginPath();
+      ctx.rect(clipX, 0, w - clipX, h);
+      ctx.clip();
 
       // Draw lines first (behind nodes)
       for (let i = 0; i < nodes.length; i++) {
@@ -104,6 +113,8 @@ function NeuralBackground() {
         ctx.fillStyle = NODE_COLOR;
         ctx.fill();
       }
+
+      ctx.restore(); // end sidebar clip
 
       raf = requestAnimationFrame(draw);
     }

@@ -160,31 +160,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-[var(--surface)] border-r border-[var(--outline-variant)] sticky top-0 h-screen shrink-0 pt-6 pb-4">
-        <Link href="/" className="flex items-center gap-3 px-6 mb-8 group">
-          <div className="relative">
-            <Brain className="h-7 w-7 text-[var(--secondary)] drop-shadow-[0_0_8px_rgba(83,221,252,0.5)] transition-transform group-hover:scale-105" />
-          </div>
-          <span className="font-bold text-xl tracking-tight text-[var(--on-surface)]" style={{ fontFamily: 'var(--app-font-display)' }}>Recall.ai</span>
+      <aside className="hidden md:flex flex-col w-[240px] bg-[var(--surface)] border-r border-[var(--outline-variant)] sticky top-0 h-screen shrink-0 pt-6 pb-4" style={{ zIndex: 10 }}>
+        <Link href="/" className="flex items-center gap-3 px-5 mb-6 group">
+          <Brain className="h-6 w-6 text-[var(--secondary)] drop-shadow-[0_0_8px_rgba(83,221,252,0.5)] transition-transform group-hover:scale-105 shrink-0" />
+          <span style={{ fontFamily: 'var(--app-font-display)', fontWeight: 700, fontSize: '18px' }} className="tracking-tight text-[var(--on-surface)]">Recall.ai</span>
         </Link>
         
-        <nav className="flex-1 flex flex-col gap-1 px-3">
+        <nav className="flex-1 flex flex-col gap-0.5 px-3">
           {navLinks.map((link) => {
             const isActive = location === link.href;
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all relative ${
-                  isActive 
-                    ? "bg-[var(--surface-bright)] text-[var(--primary)]" 
-                    : "text-[var(--on-surface-muted)] hover:bg-[var(--surface-high)] hover:text-[var(--on-surface)]"
-                }`}
+                className={`sidebar-nav-item${isActive ? " active" : ""}`}
               >
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 bg-[var(--primary)] rounded-r-full shadow-[0_0_8px_var(--primary)]" />
-                )}
-                <link.icon className="h-4 w-4" />
+                <link.icon className="shrink-0" style={{ width: 18, height: 18 }} />
                 {link.label}
               </Link>
             );
