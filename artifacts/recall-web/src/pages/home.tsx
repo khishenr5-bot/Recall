@@ -33,7 +33,7 @@ declare global {
 
 const API_BASE = "/api";
 
-function ParticleCanvas() {
+function NeuralBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -42,81 +42,84 @@ function ParticleCanvas() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let w = canvas.width = window.innerWidth;
-    let h = canvas.height = window.innerHeight;
+    let w = (canvas.width = window.innerWidth);
+    let h = (canvas.height = window.innerHeight);
 
-    const particles: {x: number, y: number, vx: number, vy: number, color: string}[] = [];
-    const isDark = document.documentElement.classList.contains("dark") || !document.documentElement.classList.contains("light");
-    const colors = isDark
-      ? ["rgba(83, 221, 252, 0.12)", "rgba(193, 128, 255, 0.12)"]
-      : ["rgba(99, 102, 241, 0.15)", "rgba(147, 51, 234, 0.12)"];
-    
-    for (let i = 0; i < 40; i++) {
-      particles.push({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: (Math.random() - 0.5) * 0.5,
-        color: colors[Math.floor(Math.random() * colors.length)],
-      });
+    const isDark =
+      document.documentElement.classList.contains("dark") ||
+      !document.documentElement.classList.contains("light");
+
+    const NODE_COLOR = isDark ? "rgba(163, 166, 255, 0.6)" : "rgba(99, 102, 241, 0.25)";
+    const LINE_COLOR_BASE = isDark ? "83, 221, 252" : "99, 102, 241";
+    const LINE_MAX_ALPHA = isDark ? 0.15 : 0.08;
+
+    type Node = { x: number; y: number; vx: number; vy: number };
+    const nodes: Node[] = [];
+
+    for (let i = 0; i < 80; i++) {
+      const speed = () => (Math.random() - 0.5) * 0.8; // ±0.4 max
+      nodes.push({ x: Math.random() * w, y: Math.random() * h, vx: speed(), vy: speed() });
     }
 
-    let animationFrame: number;
+    let raf: number;
 
-    function render() {
-      if(!ctx || !canvas) return;
+    function draw() {
+      if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, w, h);
-      
-      for (let i = 0; i < particles.length; i++) {
-        let p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
 
-        if (p.x < 0 || p.x > w) p.vx *= -1;
-        if (p.y < 0 || p.y > h) p.vy *= -1;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.fill();
-
-        for (let j = i + 1; j < particles.length; j++) {
-          let p2 = particles[j];
-          let dx = p.x - p2.x;
-          let dy = p.y - p2.y;
-          let dist = Math.sqrt(dx * dx + dy * dy);
-          
+      // Draw lines first (behind nodes)
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < 150) {
+            const alpha = LINE_MAX_ALPHA * (1 - dist / 150);
             ctx.beginPath();
-            const lineAlpha = (isDark ? 0.08 : 0.06) * (1 - dist / 150);
-            ctx.strokeStyle = isDark
-              ? `rgba(83, 221, 252, ${lineAlpha})`
-              : `rgba(99, 102, 241, ${lineAlpha})`;
+            ctx.strokeStyle = `rgba(${LINE_COLOR_BASE}, ${alpha.toFixed(3)})`;
             ctx.lineWidth = 1;
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p2.x, p2.y);
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
             ctx.stroke();
           }
         }
       }
-      animationFrame = requestAnimationFrame(render);
+
+      // Draw nodes on top
+      for (const n of nodes) {
+        n.x += n.vx;
+        n.y += n.vy;
+        if (n.x < 0 || n.x > w) n.vx *= -1;
+        if (n.y < 0 || n.y > h) n.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 2, 0, Math.PI * 2);
+        ctx.fillStyle = NODE_COLOR;
+        ctx.fill();
+      }
+
+      raf = requestAnimationFrame(draw);
     }
 
-    render();
+    draw();
 
-    const handleResize = () => {
+    const onResize = () => {
       w = canvas.width = window.innerWidth;
       h = canvas.height = window.innerHeight;
     };
-    window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", onResize);
 
     return () => {
-      cancelAnimationFrame(animationFrame);
-      window.removeEventListener("resize", handleResize);
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />;
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }}
+    />
+  );
 }
 
 export default function Home() {
@@ -138,7 +141,12 @@ export default function Home() {
   const [isResearching, setIsResearching] = useState(false);
   const [isSavingReport, setIsSavingReport] = useState(false);
   const [reportSaved, setReportSaved] = useState(false);
+  const [researchFile, setResearchFile] = useState<File | null>(null);
+  const [researchFileContent, setResearchFileContent] = useState<string>("");
+  const [isResearchListening, setIsResearchListening] = useState(false);
   const researchResultRef = useRef<HTMLDivElement>(null);
+  const researchFileInputRef = useRef<HTMLInputElement>(null);
+  const researchRecognitionRef = useRef<any>(null);
 
   const resultRef = useRef<HTMLDivElement>(null);
   const askInputRef = useRef<HTMLInputElement>(null);
@@ -237,6 +245,61 @@ export default function Home() {
     }
   };
 
+  const handleResearchFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setResearchFile(file);
+    // Read text content for .txt files; for pdf/docx send raw
+    if (file.name.endsWith(".txt")) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target?.result as string;
+        setResearchFileContent(text);
+        // Pre-fill question if empty
+        if (!researchQuestion.trim()) {
+          setResearchQuestion(`Analyze and summarize this document: ${file.name}`);
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      setResearchFileContent("");
+      if (!researchQuestion.trim()) {
+        setResearchQuestion(`Analyze and summarize this document: ${file.name}`);
+      }
+    }
+  };
+
+  const clearResearchFile = () => {
+    setResearchFile(null);
+    setResearchFileContent("");
+    if (researchFileInputRef.current) researchFileInputRef.current.value = "";
+  };
+
+  const handleResearchMicClick = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({ title: "Not supported", description: "Speech recognition is not available in this browser.", variant: "destructive" });
+      return;
+    }
+    if (isResearchListening) {
+      researchRecognitionRef.current?.stop();
+      setIsResearchListening(false);
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => setIsResearchListening(true);
+    recognition.onend = () => setIsResearchListening(false);
+    recognition.onerror = () => setIsResearchListening(false);
+    recognition.onresult = (event: any) => {
+      setResearchQuestion(event.results[0][0].transcript);
+    };
+    researchRecognitionRef.current = recognition;
+    recognition.start();
+  };
+
   const handleResearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!researchQuestion.trim()) return;
@@ -244,14 +307,24 @@ export default function Home() {
     setResearchResult(null);
     setReportSaved(false);
     const token = localStorage.getItem("recall_token");
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     try {
-      const res = await fetch(`${API_BASE}/research`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ question: researchQuestion }),
-      });
+      let body: BodyInit;
+      let headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      if (researchFile && !researchFileContent) {
+        // Binary file (PDF/DOCX) — send as FormData
+        const fd = new FormData();
+        fd.append("file", researchFile);
+        fd.append("question", researchQuestion);
+        body = fd;
+      } else {
+        headers["Content-Type"] = "application/json";
+        body = JSON.stringify({ question: researchQuestion, fileContent: researchFileContent || undefined });
+      }
+
+      const res = await fetch(`${API_BASE}/research`, { method: "POST", headers, body });
       if (!res.ok) throw new Error("Research failed");
       const data = await res.json();
       setResearchResult(data);
@@ -392,7 +465,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen bg-[var(--surface)] text-[var(--on-surface)] overflow-x-hidden">
-      <ParticleCanvas />
+      <NeuralBackground />
 
       {/* Progress bar */}
       <AnimatePresence>
@@ -414,6 +487,13 @@ export default function Home() {
         accept=".pdf,.docx,.txt,.epub"
         className="hidden"
         onChange={handleFileChange}
+      />
+      <input
+        ref={researchFileInputRef}
+        type="file"
+        accept=".pdf,.docx,.txt"
+        className="hidden"
+        onChange={handleResearchFileChange}
       />
 
       {/* Hero section */}
@@ -469,24 +549,58 @@ export default function Home() {
           </div>
 
           {inputMode === "research" ? (
-            <form onSubmit={handleResearch} className="relative w-full max-w-[640px] mx-auto space-y-3">
-              <div className="relative shadow-[0_16px_48px_rgba(163,166,255,0.06)]">
-                <input
-                  type="text"
-                  placeholder="Ask a research question, e.g. What is the best pricing strategy for B2B SaaS?"
-                  value={researchQuestion}
-                  onChange={e => setResearchQuestion(e.target.value)}
-                  className="input-glow w-full h-[60px] pl-5 pr-[140px] text-base rounded-full border border-[var(--outline-variant)] bg-[var(--surface-highest)] text-[var(--on-surface)] placeholder-[var(--on-surface-muted)] transition-all"
-                />
+            <form onSubmit={handleResearch} className="relative flex items-center w-full max-w-[640px] mx-auto">
+              <div className="relative flex-1 flex items-center shadow-[0_16px_48px_rgba(163,166,255,0.06)]">
+                {/* Paperclip */}
+                <button
+                  type="button"
+                  onClick={() => researchFileInputRef.current?.click()}
+                  className="absolute left-4 text-[var(--on-surface-muted)] hover:text-[var(--primary)] transition-colors z-10"
+                >
+                  <Paperclip className="h-5 w-5" />
+                </button>
+
+                {/* File selected display or text input */}
+                {researchFile ? (
+                  <div className="w-full h-[60px] pl-12 pr-32 flex items-center gap-2 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-highest)]">
+                    <span className="flex-1 text-[var(--on-surface)] truncate text-sm">{researchFile.name}</span>
+                    <button
+                      type="button"
+                      onClick={clearResearchFile}
+                      className="text-[var(--on-surface-muted)] hover:text-[var(--error)] transition shrink-0 p-1"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="Ask a research question, upload a document, or speak..."
+                    value={researchQuestion}
+                    onChange={e => setResearchQuestion(e.target.value)}
+                    className="input-glow w-full h-[60px] pl-12 pr-32 text-base rounded-full border border-[var(--outline-variant)] bg-[var(--surface-highest)] text-[var(--on-surface)] placeholder-[var(--on-surface-muted)] transition-all"
+                  />
+                )}
+
+                {/* Mic */}
+                <button
+                  type="button"
+                  onClick={handleResearchMicClick}
+                  className={`absolute right-[140px] transition-colors z-10 ${
+                    isResearchListening ? "text-[var(--error)] animate-pulse" : "text-[var(--on-surface-muted)] hover:text-[var(--primary)]"
+                  }`}
+                >
+                  <Mic className="h-5 w-5" />
+                </button>
+
                 <Button
                   type="submit"
-                  disabled={isResearching || !researchQuestion.trim()}
+                  disabled={isResearching || (!researchQuestion.trim() && !researchFile)}
                   className="gradient-btn absolute right-1 top-1 bottom-1 px-6 rounded-full font-medium tracking-wide border-none"
                 >
                   {isResearching ? <Loader2 className="h-5 w-5 animate-spin" /> : "Research"}
                 </Button>
               </div>
-              <p className="text-xs text-[var(--on-surface-muted)] text-center">Uses your saved library as context to produce a comprehensive research report.</p>
             </form>
           ) : (
           <form onSubmit={handleSummarize} className="relative flex items-center w-full max-w-[640px] mx-auto">

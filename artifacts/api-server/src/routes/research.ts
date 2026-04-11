@@ -33,7 +33,7 @@ router.get("/research/:id", requireAuth, async (req, res): Promise<void> => {
 // POST run research
 router.post("/research", requireAuth, async (req, res): Promise<void> => {
   const user = (req as AuthRequest).user;
-  const { question } = req.body;
+  const { question, fileContent } = req.body;
   if (!question?.trim()) { res.status(400).json({ error: "question is required" }); return; }
 
   const articles = await db.select({
@@ -52,8 +52,12 @@ router.post("/research", requireAuth, async (req, res): Promise<void> => {
       ).join("\n\n")
     : "No saved articles yet.";
 
-  const prompt = `You are a research assistant helping a founder answer: "${question}"
+  const documentContext = fileContent?.trim()
+    ? `\n\nUploaded document context:\n${fileContent.slice(0, 8000)}\n`
+    : "";
 
+  const prompt = `You are a research assistant helping a founder answer: "${question}"
+${documentContext}
 Their personal knowledge library:
 ${libraryContext}
 
