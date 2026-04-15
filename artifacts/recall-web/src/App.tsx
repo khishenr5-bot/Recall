@@ -24,6 +24,7 @@ import Wrapped from "@/pages/wrapped";
 import Teams from "@/pages/teams";
 import Notes from "@/pages/notes";
 import Canvas from "@/pages/canvas";
+import VoiceNotes from "@/pages/voice-notes";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/teams" component={() => <ProtectedRoute><Layout><Teams /></Layout></ProtectedRoute>} />
       <Route path="/notes" component={() => <ProtectedRoute><Layout><Notes /></Layout></ProtectedRoute>} />
       <Route path="/canvas" component={() => <ProtectedRoute><Layout><Canvas /></Layout></ProtectedRoute>} />
+      <Route path="/voice-notes" component={() => <ProtectedRoute><Layout><VoiceNotes /></Layout></ProtectedRoute>} />
       
       <Route component={() => <Layout><NotFound /></Layout>} />
     </Switch>

@@ -19,6 +19,7 @@ import {
   Moon,
   NotebookPen,
   Layers,
+  Mic,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -45,6 +46,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navLinks = [
     { href: "/saved", label: "Library", icon: BookMarked },
     { href: "/notes", label: "Notes", icon: NotebookPen },
+    { href: "/voice-notes", label: "Voice Notes", icon: Mic },
     { href: "/canvas", label: "Strategy Canvas", icon: Layers },
     { href: "/feeds", label: "Feeds", icon: Rss },
     { href: "/teams", label: "Teams", icon: Users },

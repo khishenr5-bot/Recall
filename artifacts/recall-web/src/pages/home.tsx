@@ -10,6 +10,7 @@ import {
   Sparkles,
   Paperclip,
   Mic,
+  MicOff,
   ArrowRight,
   Send,
   RefreshCw,
@@ -145,7 +146,11 @@ export default function Home() {
   const { user, login: setAuth } = useAuth();
   const { toast } = useToast();
 
-  const [inputMode, setInputMode] = useState<"analyze" | "research">("analyze");
+  const [inputMode, setInputMode] = useState<"analyze" | "research" | "voice">("analyze");
+  const [voiceTranscript, setVoiceTranscript] = useState("");
+  const [voiceIsRecording, setVoiceIsRecording] = useState(false);
+  const [voiceIsSaving, setVoiceIsSaving] = useState(false);
+  const voiceRecognitionRef = useRef<any>(null);
   const [url, setUrl] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [summary, setSummary] = useState<any>(null);
@@ -482,6 +487,63 @@ export default function Home() {
     setTimeout(() => urlInputRef.current?.focus(), 100);
   };
 
+  const toggleVoiceRecording = () => {
+    if (voiceIsRecording) {
+      voiceRecognitionRef.current?.stop();
+      setVoiceIsRecording(false);
+      return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      toast({ title: "Not supported", description: "Speech recognition requires Chrome.", variant: "destructive" });
+      return;
+    }
+    const rec = new SR();
+    rec.lang = "en-US";
+    rec.continuous = true;
+    rec.interimResults = true;
+    let finalText = "";
+    rec.onresult = (e: any) => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + " ";
+        else interim = e.results[i][0].transcript;
+      }
+      setVoiceTranscript((finalText + interim).trim());
+    };
+    rec.onend = () => setVoiceIsRecording(false);
+    rec.onerror = () => setVoiceIsRecording(false);
+    rec.start();
+    voiceRecognitionRef.current = rec;
+    setVoiceIsRecording(true);
+    setVoiceTranscript("");
+  };
+
+  const saveVoiceNote = async () => {
+    if (!voiceTranscript.trim()) {
+      toast({ title: "Nothing to save", description: "Record something first.", variant: "destructive" });
+      return;
+    }
+    if (voiceIsRecording) { voiceRecognitionRef.current?.stop(); setVoiceIsRecording(false); }
+    setVoiceIsSaving(true);
+    try {
+      const token = localStorage.getItem("recall_token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`${API_BASE}/voice-notes`, {
+        method: "POST", headers,
+        body: JSON.stringify({ transcript: voiceTranscript }),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      const data = await res.json();
+      setVoiceTranscript("");
+      toast({ title: "Voice note saved!", description: data.note?.summary || "Your note was captured." });
+    } catch {
+      toast({ title: "Failed to save", variant: "destructive" });
+    }
+    setVoiceIsSaving(false);
+  };
+
   return (
     <div className="relative min-h-screen bg-[var(--surface)] text-[var(--on-surface)] overflow-x-hidden">
       <NeuralBackground />
@@ -565,9 +627,42 @@ export default function Home() {
             >
               <Search className="h-3.5 w-3.5" /> Deep Research
             </button>
+            <button
+              onClick={() => setInputMode("voice")}
+              className={`px-5 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-2 ${inputMode === "voice" ? "bg-[var(--surface-bright)] text-[var(--on-surface)] shadow-sm" : "text-[var(--on-surface-muted)] hover:text-[var(--on-surface)]"}`}
+            >
+              <Mic className="h-3.5 w-3.5" /> Voice Note
+            </button>
           </div>
 
-          {inputMode === "research" ? (
+          {inputMode === "voice" ? (
+            <div className="w-full max-w-[640px] mx-auto space-y-4">
+              <div className="glass rounded-2xl border border-[var(--outline-variant)] p-6 flex gap-5 items-start shadow-[0_16px_48px_rgba(163,166,255,0.06)]">
+                <button
+                  type="button"
+                  onClick={toggleVoiceRecording}
+                  className={`flex-shrink-0 h-16 w-16 rounded-full flex items-center justify-center transition-all shadow-lg ${voiceIsRecording ? "bg-[var(--error)] shadow-[0_0_20px_rgba(255,107,107,0.4)] animate-pulse" : "bg-[var(--primary)] hover:opacity-90 shadow-[0_0_16px_rgba(163,166,255,0.3)]"}`}
+                >
+                  {voiceIsRecording ? <MicOff className="h-7 w-7 text-white" /> : <Mic className="h-7 w-7 text-white" />}
+                </button>
+                <div className="flex-1 space-y-3">
+                  <div className="min-h-[72px] p-4 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-highest)] text-[var(--on-surface)] text-sm leading-relaxed">
+                    {voiceTranscript || <span className="text-[var(--on-surface-muted)] italic">{voiceIsRecording ? "Listening... speak now" : "Click the mic to start recording"}</span>}
+                  </div>
+                  <div className="flex gap-3">
+                    <Button onClick={saveVoiceNote} disabled={voiceIsSaving || !voiceTranscript.trim()} className="gradient-btn h-9 px-5 rounded-full gap-2">
+                      {voiceIsSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Note"}
+                    </Button>
+                    <Link href="/voice-notes">
+                      <Button variant="ghost" className="h-9 px-4 rounded-full text-[var(--on-surface-muted)] hover:text-[var(--on-surface)] gap-1.5">
+                        All notes <ChevronRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : inputMode === "research" ? (
             <form onSubmit={handleResearch} className="relative flex items-center w-full max-w-[640px] mx-auto">
               <div className="relative flex-1 flex items-center shadow-[0_16px_48px_rgba(163,166,255,0.06)]">
                 {/* Paperclip */}

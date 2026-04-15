@@ -1,9 +1,9 @@
 {
   "manifest_version": 2,
   "name": "Recall.ai",
-  "version": "1.0.0",
-  "description": "Save and summarise any webpage to your Recall.ai second brain.",
-  "permissions": ["activeTab", "contextMenus", "storage", "notifications", "<all_urls>"],
+  "version": "1.1.0",
+  "description": "Save and summarise any webpage to your Recall.ai second brain. Capture voice notes with one click.",
+  "permissions": ["activeTab", "contextMenus", "storage", "notifications", "tabs", "<all_urls>"],
   "browser_specific_settings": {
     "gecko": {
       "id": "recall@recall.ai",

@@ -1,0 +1,114 @@
+Add Voice Capture to Recall — the ability to speak your thoughts about any webpage and have them saved to your library with full context.
+Backend
+1. Voice Notes Table (Supabase SQL — run this first):
+sqlCREATE TABLE IF NOT EXISTS voice_notes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  transcript TEXT NOT NULL,
+  summary TEXT,
+  tags TEXT[] DEFAULT '{}',
+  source_url TEXT,
+  source_title TEXT,
+  page_context TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE voice_notes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own voice notes" ON voice_notes
+  FOR ALL USING (auth.uid() = user_id);
+2. New route: POST /api/voice-notes
+Accepts: { transcript, source_url, source_title, page_context }
+
+Parse inline tags from transcript — any phrase 'tag: X' or 'hashtag X' extracts X as a tag
+Call Claude Haiku to generate a one-line summary of the transcript
+Generate embeddings and store in Supabase
+Return the saved voice note
+
+3. New route: GET /api/voice-notes
+Returns all voice notes for the authenticated user ordered by created_at descending.
+4. New route: DELETE /api/voice-notes/:id
+Deletes a voice note belonging to the authenticated user.
+5. Update POST /api/saved/ask
+When answering a question across the library, also fetch the user's voice notes and include them as context. Prefix voice note context with 'From your voice note on [source_title]:' so Claude can distinguish them.
+Chrome Extension Updates
+Update extension/popup.html — add voice capture section:
+Below the Save button add:
+
+A large microphone button with label 'Voice Note'
+When clicked: starts Web Speech API recording, button turns red with pulsing animation and shows 'Listening...'
+While listening: show live transcript text appearing in a text area below the button
+Click again to stop: shows 'Processing...' then sends transcript + current tab URL + title to POST /api/voice-notes with auth token
+Show success: 'Voice note saved!' with the one-line AI summary displayed
+Keyboard shortcut: Ctrl+Shift+V starts/stops recording from any page
+
+Update extension/content.js — floating mic button:
+
+Inject a small floating mic button (32px circle, indigo background, white mic icon) in the bottom-right of every webpage, above the page content
+Position: fixed, bottom 80px, right 20px, z-index 9999
+On click: activates Web Speech API, button pulses red while recording
+On stop: captures the transcript + current page URL + title + the currently visible text in the viewport (document.elementFromPoint center of screen innerText, max 500 chars) as page_context
+Sends to the extension background.js which forwards to POST /api/voice-notes
+Shows a small toast notification: 'Voice note saved to Recall'
+The floating button can be hidden by double-clicking it (persists via localStorage)
+
+Update extension/background.js:
+
+Add message listener for SAVE_VOICE_NOTE action
+Gets auth token from chrome.storage.local
+Posts to /api/voice-notes with all fields
+Sends back success/error to content script
+
+Web App Updates
+1. Voice Notes page at /voice-notes — add to sidebar navigation with mic icon:
+
+Page title: 'Voice Notes'
+Subtitle: 'Your spoken thoughts, captured and searchable'
+Filter bar: All / Today / This Week / By Source
+Each voice note card shows:
+
+Mic icon + timestamp (relative: '2 hours ago')
+Source URL favicon + title if available
+AI one-line summary in indigo italic
+Full transcript in body text, collapsible if over 3 lines
+Tags as cyan chips (parsed from speech)
+Page context snippet in a subtle gray box if available
+Delete button
+
+
+Empty state: mic icon, 'No voice notes yet', 'Use the Chrome extension or the mic button below to capture your thoughts'
+
+2. Voice capture on the web app home page:
+
+Add a third tab next to 'Analyze URL' and 'Deep Research': '🎤 Voice Note'
+When selected: show a large centered mic button
+Click to start recording using Web Speech API
+Live transcript appears below as user speaks
+Auto-detect when user stops speaking (2 second silence = auto-stop)
+Optional URL field: 'What page is this about? (optional)'
+Save button sends to /api/voice-notes
+After saving: show the AI summary + extracted tags + link to Voice Notes page
+
+3. Update Library page search and Ask AI:
+
+In the search bar, add source filter chips: 📄 Articles | 🎤 Voice Notes | 📁 All
+Voice notes appear in the main library feed with a mic icon badge instead of a domain name
+The Ask AI feature already queries voice notes (from backend update above) — add a note in the UI: 'Searching your articles and voice notes...'
+
+4. Update Insights page:
+
+Add a Voice Activity section showing: total voice notes, most active day for voice capture, most common tags from voice notes, top sources you've voice-noted about
+
+Inline Tag Parsing Logic
+Parse these patterns from transcript text:
+
+'tag: X' or 'tags: X' → extract X as tag
+'hashtag X' → extract X as tag
+'#X' spoken as 'hash X' → extract X as tag
+Strip the tag syntax from the displayed transcript but store tags separately.
+
+Important
+
+Web Speech API is free, works natively in Chrome, no API key needed
+All transcription happens in the browser — nothing is sent to any external service for transcription
+Only the final transcript text is sent to your backend
+Show a clear privacy notice on the Voice Note tab: 'Your voice is transcribed locally in your browser. Only the text is saved to Recall.'
+Keyboard shortcut Ctrl+Shift+V must not conflict with browser defaults"

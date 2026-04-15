@@ -7,3 +7,4 @@ export * from "./article_notes";
 export * from "./standalone_notes";
 export * from "./canvas_sessions";
 export * from "./research_reports";
+export * from "./voice_notes";

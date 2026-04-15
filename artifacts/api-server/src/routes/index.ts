@@ -19,6 +19,7 @@ import livingDocsRouter from "./living-documents";
 import notionRouter from "./notion";
 import researchRouter from "./research";
 import canvasRouter from "./canvas";
+import voiceNotesRouter from "./voice-notes";
 
 const router: IRouter = Router();
 
@@ -42,5 +43,6 @@ router.use(livingDocsRouter);
 router.use(notionRouter);
 router.use(researchRouter);
 router.use(canvasRouter);
+router.use(voiceNotesRouter);
 
 export default router;
