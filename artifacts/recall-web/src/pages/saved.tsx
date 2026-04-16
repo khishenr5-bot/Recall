@@ -5,12 +5,41 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, Brain, Shield, Trash2, Share2, MessageSquare, ChevronDown, Pencil, CheckCircle2, Circle, Clock3, Rss, Flame, Target, BookOpen, Users, Bell, RefreshCw, Zap, ChevronRight } from "lucide-react";
+import { Loader2, Search, Brain, Shield, Trash2, Share2, MessageSquare, ChevronDown, Pencil, CheckCircle2, Circle, Clock3, Rss, Flame, Target, BookOpen, Users, Bell, RefreshCw, Zap, ChevronRight, Tag, Database } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { formatDistanceToNow } from "date-fns";
+
+type ImportedMemory = {
+  id: number;
+  source: string;
+  title: string | null;
+  content: string;
+  summary: string | null;
+  tags: string[];
+  originalDate: string | null;
+  createdAt: string;
+};
+
+const SOURCE_ICONS: Record<string, string> = {
+  chatgpt: "🤖",
+  notion: "📝",
+  obsidian: "🔮",
+  readwise: "📖",
+  evernote: "🐘",
+  text: "✏️",
+};
+const SOURCE_COLORS: Record<string, string> = {
+  chatgpt: "bg-[#10a37f]/10 text-[#10a37f] border-[#10a37f]/30",
+  notion: "bg-[var(--surface-bright)] text-[var(--on-surface-muted)] border-[var(--outline-variant)]",
+  obsidian: "bg-[#7c3aed]/10 text-[#c180ff] border-[#7c3aed]/30",
+  readwise: "bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/30",
+  evernote: "bg-[#50fa7b]/10 text-[#50fa7b] border-[#50fa7b]/30",
+  text: "bg-[var(--primary)]/10 text-[var(--primary)] border-[var(--primary)]/30",
+};
 
 type ReadingStatus = "unread" | "reading" | "completed";
 
@@ -74,6 +103,10 @@ export default function Saved() {
   const [search, setSearch] = useState("");
   const [collectionId, setCollectionId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | "all">("all");
+  const [sourceTab, setSourceTab] = useState<"articles" | "memories" | "voice">("articles");
+  const [memories, setMemories] = useState<ImportedMemory[]>([]);
+  const [memoriesLoading, setMemoriesLoading] = useState(false);
+  const [expandedMemories, setExpandedMemories] = useState<Set<number>>(new Set());
   const [articleStatuses, setArticleStatuses] = useState<Record<number, ReadingStatus>>({});
   const [notes, setNotes] = useState<Record<number, string>>({});
   const [teams, setTeams] = useState<any[]>([]);
@@ -113,6 +146,29 @@ export default function Saved() {
   useEffect(() => {
     apiFetch("/api/teams/my").then(r => r.json()).then(d => setTeams(d.teams ?? [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (sourceTab !== "memories") return;
+    setMemoriesLoading(true);
+    apiFetch("/api/memories?limit=50")
+      .then(r => r.json())
+      .then(d => setMemories(d.memories ?? []))
+      .catch(() => {})
+      .finally(() => setMemoriesLoading(false));
+  }, [sourceTab]);
+
+  const deleteMemory = async (id: number) => {
+    await apiFetch(`/api/memories/${id}`, { method: "DELETE" });
+    setMemories(m => m.filter(x => x.id !== id));
+  };
+
+  const toggleMemoryExpand = (id: number) => {
+    setExpandedMemories(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
     apiFetch("/api/integrations/notion/status").then(r => r.json()).then(d => {
@@ -207,39 +263,140 @@ export default function Saved() {
           <p className="text-[var(--on-surface-muted)] mt-3 text-lg">{savedData?.total || 0} articles saved to your library.</p>
         </div>
 
-        {/* Search */}
-        <div className="relative w-full shadow-[0_16px_48px_rgba(163,166,255,0.06)]">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--on-surface-muted)]" />
-          <input
-            placeholder="Search your library..."
-            className="input-glow w-full h-[60px] pl-12 pr-4 text-base rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-highest)] text-[var(--on-surface)] placeholder-[var(--on-surface-muted)] transition-all"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        {/* Source tabs */}
+        <div className="flex items-center gap-1 p-1 bg-[var(--surface-high)] rounded-full border border-[var(--outline-variant)] w-fit">
+          {([
+            ["articles", "📰 Articles"],
+            ["memories", "🧠 Memories"],
+            ["voice", "🎙 Voice Notes"],
+          ] as const).map(([tab, label]) => (
+            <button
+              key={tab}
+              onClick={() => setSourceTab(tab)}
+              className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${sourceTab === tab ? "bg-[var(--surface-bright)] text-[var(--on-surface)] shadow-sm" : "text-[var(--on-surface-muted)] hover:text-[var(--on-surface)]"}`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3">
-          {filterLabels.map(([val, label]) => {
-            const isActive = statusFilter === val;
-            return (
-              <button
-                key={val}
-                onClick={() => setStatusFilter(val)}
-                className={`label-caps px-4 py-2 rounded-md border transition-colors flex items-center gap-2 ${
-                  isActive 
-                    ? "bg-[var(--surface-bright)] text-white border-[var(--primary)] shadow-[0_0_12px_rgba(163,166,255,0.2)]" 
-                    : "bg-[var(--surface-high)] text-[var(--on-surface-muted)] border-[var(--outline-variant)] hover:bg-[var(--surface-bright)] hover:text-white"
-                }`}
-              >
-                {label}
-              </button>
-            )
-          })}
-        </div>
+        {/* Search (articles tab only) */}
+        {sourceTab === "articles" && (
+          <div className="relative w-full shadow-[0_16px_48px_rgba(163,166,255,0.06)]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--on-surface-muted)]" />
+            <input
+              placeholder="Search your library..."
+              className="input-glow w-full h-[60px] pl-12 pr-4 text-base rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-highest)] text-[var(--on-surface)] placeholder-[var(--on-surface-muted)] transition-all"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        )}
+
+        {/* Status Filters (articles tab only) */}
+        {sourceTab === "articles" && (
+          <div className="flex flex-wrap gap-3">
+            {filterLabels.map(([val, label]) => {
+              const isActive = statusFilter === val;
+              return (
+                <button
+                  key={val}
+                  onClick={() => setStatusFilter(val)}
+                  className={`label-caps px-4 py-2 rounded-md border transition-colors flex items-center gap-2 ${
+                    isActive 
+                      ? "bg-[var(--surface-bright)] text-white border-[var(--primary)] shadow-[0_0_12px_rgba(163,166,255,0.2)]" 
+                      : "bg-[var(--surface-high)] text-[var(--on-surface-muted)] border-[var(--outline-variant)] hover:bg-[var(--surface-bright)] hover:text-white"
+                  }`}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Voice Notes redirect */}
+        {sourceTab === "voice" && (
+          <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+            <div className="text-5xl">🎙</div>
+            <h3 className="text-xl font-bold text-[var(--on-surface)]">Voice Notes are in their own section</h3>
+            <p className="text-[var(--on-surface-muted)]">Manage and search all your voice recordings there.</p>
+            <Link href="/voice-notes">
+              <Button className="gradient-btn rounded-full gap-2">Go to Voice Notes <ChevronRight className="h-4 w-4" /></Button>
+            </Link>
+          </div>
+        )}
+
+        {/* Memories feed */}
+        {sourceTab === "memories" && (
+          memoriesLoading ? (
+            <div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" /></div>
+          ) : memories.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+              <div className="text-5xl">🧠</div>
+              <h3 className="text-xl font-bold text-[var(--on-surface)]">No imported memories yet</h3>
+              <p className="text-[var(--on-surface-muted)] max-w-xs">Import memories from ChatGPT, Notion, Obsidian, Readwise, Evernote, or plain text.</p>
+              <Link href="/import">
+                <Button className="gradient-btn rounded-full gap-2"><Database className="h-4 w-4" /> Import Memory</Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {memories.map(mem => {
+                const icon = SOURCE_ICONS[mem.source] ?? "💾";
+                const badgeColor = SOURCE_COLORS[mem.source] ?? "bg-[var(--surface-bright)] text-[var(--on-surface-muted)] border-[var(--outline-variant)]";
+                const isExpanded = expandedMemories.has(mem.id);
+                const isLong = mem.content.length > 240;
+                return (
+                  <motion.div
+                    key={mem.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-[var(--surface-high)] rounded-xl border border-[var(--outline-variant)] p-5 space-y-3 hover:border-[var(--primary)]/30 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badgeColor}`}>
+                          {icon} {mem.source}
+                        </span>
+                        <span className="text-xs text-[var(--on-surface-muted)]">
+                          {formatDistanceToNow(new Date(mem.createdAt), { addSuffix: true })}
+                        </span>
+                        {mem.originalDate && (
+                          <span className="text-xs text-[var(--on-surface-muted)]">· Originally {new Date(mem.originalDate).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                      <button onClick={() => deleteMemory(mem.id)} className="text-[var(--on-surface-muted)] hover:text-[var(--error)] transition-colors shrink-0">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {mem.summary && <p className="text-sm italic text-[var(--primary)] leading-relaxed">{mem.summary}</p>}
+                    <p className="text-sm text-[var(--on-surface)] leading-relaxed">
+                      {isLong && !isExpanded ? mem.content.slice(0, 240) + "..." : mem.content}
+                      {isLong && (
+                        <button onClick={() => toggleMemoryExpand(mem.id)} className="ml-2 text-[var(--primary)] text-xs font-medium hover:underline">
+                          {isExpanded ? "Show less" : "Show more"}
+                        </button>
+                      )}
+                    </p>
+                    {mem.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {mem.tags.map(tag => (
+                          <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[var(--secondary)]/10 text-[var(--secondary)] border border-[var(--secondary)]/20">
+                            <Tag className="h-2.5 w-2.5" />{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          )
+        )}
 
         {/* Articles */}
-        {isLoadingSaved ? (
+        {sourceTab === "articles" && (isLoadingSaved ? (
           <div className="space-y-6">
             {[1, 2, 3].map(i => (
               <div key={i} className="h-40 bg-[var(--surface-high)] rounded-[0.5rem] border border-[var(--outline-variant)] animate-pulse" />
@@ -344,7 +501,7 @@ export default function Saved() {
               );
             })}
           </div>
-        )}
+        ))}
       </div>
     </>
   );

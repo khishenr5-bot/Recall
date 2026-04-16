@@ -20,6 +20,7 @@ import {
   NotebookPen,
   Layers,
   Mic,
+  Download,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -47,6 +48,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/saved", label: "Library", icon: BookMarked },
     { href: "/notes", label: "Notes", icon: NotebookPen },
     { href: "/voice-notes", label: "Voice Notes", icon: Mic },
+    { href: "/import", label: "Import Memory", icon: Download },
     { href: "/canvas", label: "Strategy Canvas", icon: Layers },
     { href: "/feeds", label: "Feeds", icon: Rss },
     { href: "/teams", label: "Teams", icon: Users },

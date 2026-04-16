@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { db, usersTable, savedArticlesTable } from "@workspace/db";
+import { db, usersTable, savedArticlesTable, importedMemoriesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAuth, optionalAuth, type AuthRequest } from "../lib/auth";
 import { scrapeUrl } from "../lib/scraper";
@@ -225,12 +225,24 @@ router.post("/saved/ask", requireAuth, async (req, res): Promise<void> => {
     .where(eq(savedArticlesTable.userId, user.id))
     .limit(30);
 
-  const result = await askLibraryQuestion(parsed.data.question, articles.map(a => ({
-    id: a.id,
-    title: a.title,
-    verdict: a.verdict,
-    bullets: a.bullets as string[],
-  })));
+  // Fetch imported memories to enrich the context
+  const memories = await db
+    .select({ id: importedMemoriesTable.id, source: importedMemoriesTable.source, summary: importedMemoriesTable.summary, content: importedMemoriesTable.content })
+    .from(importedMemoriesTable)
+    .where(eq(importedMemoriesTable.userId, user.id))
+    .limit(20);
+
+  const memoryArticles = memories.map(m => ({
+    id: -m.id,
+    title: `[Memory from ${m.source}]`,
+    verdict: m.summary ?? m.content.slice(0, 120),
+    bullets: [m.content.slice(0, 300)],
+  }));
+
+  const result = await askLibraryQuestion(parsed.data.question, [
+    ...articles.map(a => ({ id: a.id, title: a.title, verdict: a.verdict, bullets: a.bullets as string[] })),
+    ...memoryArticles,
+  ]);
   res.json(result);
 });
 

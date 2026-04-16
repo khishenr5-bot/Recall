@@ -20,6 +20,7 @@ import notionRouter from "./notion";
 import researchRouter from "./research";
 import canvasRouter from "./canvas";
 import voiceNotesRouter from "./voice-notes";
+import importRouter from "./import";
 
 const router: IRouter = Router();
 
@@ -44,5 +45,6 @@ router.use(notionRouter);
 router.use(researchRouter);
 router.use(canvasRouter);
 router.use(voiceNotesRouter);
+router.use(importRouter);
 
 export default router;

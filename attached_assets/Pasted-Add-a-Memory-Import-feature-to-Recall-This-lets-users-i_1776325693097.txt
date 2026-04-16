@@ -1,0 +1,62 @@
+Add a Memory Import feature to Recall. This lets users import their thinking history from other AI tools and note apps into their Recall library.
+1. Supabase table:
+sqlCREATE TABLE IF NOT EXISTS imported_memories (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  source TEXT NOT NULL,
+  content TEXT NOT NULL,
+  summary TEXT,
+  tags TEXT[] DEFAULT '{}',
+  original_date TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE imported_memories ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own memories" ON imported_memories
+  FOR ALL USING (auth.uid() = user_id);
+2. Import page at /import — add to sidebar:
+Page title: 'Import Memory'
+Subtitle: 'Bring your thinking history from other tools into Recall'
+Show 6 import sources as cards with logo, name, description, and Import button:
+
+ChatGPT Memory — 'Upload your ChatGPT memory export JSON file. Go to ChatGPT → Settings → Data Controls → Export data → memory.json' — accepts JSON file
+Notion — 'Upload a Notion export ZIP or paste page content' — accepts ZIP or MD files
+Obsidian — 'Upload your Obsidian vault notes as a ZIP of Markdown files' — accepts ZIP
+Readwise — 'Upload your Readwise highlights CSV export' — accepts CSV
+Evernote — 'Upload your Evernote ENEX export file' — accepts ENEX/XML
+Plain Text / Markdown — 'Paste any text, notes, or thoughts directly' — text area input
+
+3. Backend: POST /api/import/:source
+Accepts file upload or text. Parse based on source:
+
+chatgpt: parse memory.json — each memory item is { memory: 'string' } — extract each memory as a separate entry
+notion: parse Markdown files from ZIP — each file becomes one entry with filename as title
+obsidian: parse Markdown files from ZIP — same as Notion
+readwise: parse CSV — columns: Title, Author, URL, Highlight, Note, Date — each highlight row becomes one entry
+evernote: parse ENEX XML — extract note title + content text for each note
+text: split by double newline, each paragraph becomes one entry
+
+For each parsed entry:
+
+Send to Claude Haiku for a one-line summary and tag extraction
+Store in imported_memories table with source label
+Return progress: { total, processed, failed }
+
+Show a progress bar during import: 'Processing 47 of 203 memories...'
+4. Memories in the Library:
+
+Imported memories appear in the main library feed with a source badge (ChatGPT icon, Notion icon, etc.)
+Filter chip on Library page: Articles | Voice Notes | Memories | All
+Each memory card shows: source badge, summary, original content (collapsible), tags, original date if available
+
+5. Memories in Ask AI:
+
+When user asks a question, include their imported memories as additional context
+Claude can reference them: 'From your ChatGPT memory: you previously noted that...'
+This makes Ask AI genuinely personal — it knows their historical thinking
+
+6. Memory Insights on Insights page:
+
+Add a section: 'Your Imported Knowledge' showing total memories by source, most common topics, oldest memory date, a timeline showing when memories were created
+
+7. Privacy notice on the import page:
+'Your imported memories are stored privately in your Recall library. They are never shared or used to train AI models. You can delete all imported memories at any time from Settings.'"

@@ -1,17 +1,43 @@
 import { useGetReadingDna, useGetReadingStreak, useGetMentorRecommendations, useGetDueReviews, useCompleteReview } from "@workspace/api-client-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
-import { Flame, BrainCircuit, Library, CheckCircle2, ArrowRight } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Flame, BrainCircuit, Library, CheckCircle2, ArrowRight, Database } from "lucide-react";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { getGetDueReviewsQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 
 const COLORS = ['#a3a6ff', '#53ddfc', '#c180ff', '#6366f1', '#ff6b6b'];
+
+const SOURCE_ICONS: Record<string, string> = {
+  chatgpt: "🤖",
+  notion: "📝",
+  obsidian: "🔮",
+  readwise: "📖",
+  evernote: "🐘",
+  text: "✏️",
+};
+
+function useMemoryStats() {
+  return useQuery({
+    queryKey: ["memory-stats"],
+    queryFn: async () => {
+      const token = localStorage.getItem("recall_token");
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch("/api/memories/stats", { headers });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    staleTime: 60000,
+  });
+}
 
 export default function Insights() {
   const { data: dna } = useGetReadingDna();
   const { data: streak } = useGetReadingStreak();
   const { data: mentor } = useGetMentorRecommendations();
   const { data: dueReviews } = useGetDueReviews();
+  const { data: memStats } = useMemoryStats();
   const queryClient = useQueryClient();
 
   const completeReviewMutation = useCompleteReview({
@@ -60,7 +86,7 @@ export default function Insights() {
                     paddingAngle={4} dataKey="count" nameKey="topic"
                     stroke="none"
                   >
-                    {dna.topicBreakdown.map((_, index) => (
+                    {dna.topicBreakdown.map((_: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -114,7 +140,7 @@ export default function Insights() {
                   <div className="mt-4 pt-4 border-t border-[var(--outline-variant)]">
                     <p className="label-caps text-[var(--on-surface-muted)] mb-3">Knowledge Gaps</p>
                     <div className="flex flex-wrap gap-2">
-                      {mentor.knowledgeGaps.map((gap, i) => (
+                      {mentor.knowledgeGaps.map((gap: any, i: number) => (
                         <span key={i} className="text-xs bg-[var(--surface-bright)] text-[var(--on-surface)] px-3 py-1.5 rounded-full border border-[var(--outline-variant)] flex items-center">
                           {gap.topic} <ArrowRight className="ml-1 h-3 w-3 text-[var(--primary)]" />
                         </span>
@@ -128,6 +154,70 @@ export default function Insights() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Imported Knowledge section */}
+      <div className="bg-[var(--surface-high)] rounded-[0.5rem] p-8 space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-[var(--on-surface)] flex items-center gap-2" style={{ fontFamily: "var(--app-font-display)" }}>
+            <Database className="h-5 w-5 text-[var(--tertiary)]" />
+            Your Imported Knowledge
+          </h2>
+          <Link href="/import">
+            <Button variant="outline" size="sm" className="border-[var(--outline-variant)] text-[var(--on-surface-muted)] hover:text-[var(--on-surface)] gap-1.5">
+              Import more <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </Link>
+        </div>
+
+        {!memStats || memStats.total === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+            <p className="text-[var(--on-surface-muted)]">No imported memories yet.</p>
+            <Link href="/import">
+              <Button size="sm" className="gradient-btn rounded-full">Import from ChatGPT, Notion, Obsidian…</Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Stats row */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="glass rounded-xl border border-[var(--outline-variant)] p-4 text-center">
+                <p className="text-3xl font-bold text-[var(--on-surface)]">{memStats.total.toLocaleString()}</p>
+                <p className="text-xs text-[var(--on-surface-muted)] mt-1 label-caps">Total Memories</p>
+              </div>
+              <div className="glass rounded-xl border border-[var(--outline-variant)] p-4 text-center">
+                <p className="text-3xl font-bold text-[var(--on-surface)]">{memStats.bySource.length}</p>
+                <p className="text-xs text-[var(--on-surface-muted)] mt-1 label-caps">Sources</p>
+              </div>
+              {memStats.oldestDate && (
+                <div className="glass rounded-xl border border-[var(--outline-variant)] p-4 text-center col-span-2 md:col-span-1">
+                  <p className="text-xl font-bold text-[var(--on-surface)]">{new Date(memStats.oldestDate).getFullYear()}</p>
+                  <p className="text-xs text-[var(--on-surface-muted)] mt-1 label-caps">Oldest Memory</p>
+                </div>
+              )}
+            </div>
+
+            {/* By source breakdown */}
+            <div className="space-y-2">
+              <p className="label-caps text-[var(--on-surface-muted)]">Memories by source</p>
+              <div className="space-y-2">
+                {memStats.bySource.map((s: { source: string; count: number }) => (
+                  <div key={s.source} className="flex items-center gap-3">
+                    <span className="text-lg">{SOURCE_ICONS[s.source] ?? "💾"}</span>
+                    <span className="text-sm text-[var(--on-surface)] w-24 shrink-0 capitalize">{s.source}</span>
+                    <div className="flex-1 h-2 rounded-full bg-[var(--surface-bright)] overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--tertiary)]"
+                        style={{ width: `${Math.round((s.count / memStats.total) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-[var(--on-surface-muted)] w-10 text-right">{s.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
