@@ -79,6 +79,16 @@ const SOURCES: Source[] = [
     icon: "✏️",
     color: "from-[var(--primary)]/15 to-[var(--primary)]/5 border-[var(--primary)]/30",
   },
+  {
+    id: "claude",
+    label: "Claude Conversations",
+    description: "Paste a Claude conversation. Only Assistant responses are extracted as knowledge.",
+    hint: "Copy the full conversation text from Claude.ai — Human: and Assistant: turns are auto-detected",
+    accept: "",
+    useText: true,
+    icon: "✨",
+    color: "from-[#c180ff]/20 to-[#c180ff]/5 border-[#c180ff]/30",
+  },
 ];
 
 type Progress = { total: number; processed: number; failed: number; stage: "parsing" | "processing" | "done" | "error"; error?: string };
@@ -233,8 +243,13 @@ export default function ImportPage() {
             {/* File or Text input */}
             {src.useText ? (
               <textarea
-                className="w-full min-h-[160px] p-4 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-highest)] text-[var(--on-surface)] text-sm leading-relaxed resize-none outline-none focus:border-[var(--primary)] transition-colors"
-                placeholder="Paste your notes here. Separate distinct memories with a blank line..."
+                className="w-full p-4 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-highest)] text-[var(--on-surface)] text-sm leading-relaxed resize-none outline-none focus:border-[var(--primary)] transition-colors"
+                style={{ minHeight: src.id === "claude" ? "260px" : "160px" }}
+                placeholder={
+                  src.id === "claude"
+                    ? "Paste your Claude conversation here.\n\nExample format:\nHuman: How should I structure my API?\nAssistant: I'd recommend using RESTful conventions...\n\nHuman: What about authentication?\nAssistant: JWT tokens are a solid choice because..."
+                    : "Paste your notes here. Separate distinct memories with a blank line..."
+                }
                 value={pasteText}
                 onChange={e => setPasteText(e.target.value)}
                 disabled={!!isProcessing}

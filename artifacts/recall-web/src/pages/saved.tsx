@@ -31,6 +31,7 @@ const SOURCE_ICONS: Record<string, string> = {
   readwise: "📖",
   evernote: "🐘",
   text: "✏️",
+  claude: "✨",
 };
 const SOURCE_COLORS: Record<string, string> = {
   chatgpt: "bg-[#10a37f]/10 text-[#10a37f] border-[#10a37f]/30",
@@ -39,6 +40,7 @@ const SOURCE_COLORS: Record<string, string> = {
   readwise: "bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/30",
   evernote: "bg-[#50fa7b]/10 text-[#50fa7b] border-[#50fa7b]/30",
   text: "bg-[var(--primary)]/10 text-[var(--primary)] border-[var(--primary)]/30",
+  claude: "bg-[#c180ff]/10 text-[#c180ff] border-[#c180ff]/30",
 };
 
 type ReadingStatus = "unread" | "reading" | "completed";

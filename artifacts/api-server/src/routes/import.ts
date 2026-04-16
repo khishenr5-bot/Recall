@@ -109,17 +109,54 @@ function parsePlainText(text: string): Entry[] {
     .map(p => ({ content: p }));
 }
 
+function parseClaudeConversation(text: string): Entry[] {
+  // Split on Human: / Assistant: turn markers (case-insensitive)
+  const matches: { role: string; index: number }[] = [];
+  let m: RegExpExecArray | null;
+  const re = /(?:^|\n)(Human|Assistant)\s*:/gi;
+  while ((m = re.exec(text)) !== null) {
+    matches.push({ role: m[1].toLowerCase(), index: m.index + m[0].indexOf(m[1]) });
+  }
+
+  for (let i = 0; i < matches.length; i++) {
+    const start = matches[i].index + matches[i].role.length + 1; // skip "Role:"
+    const end = i + 1 < matches.length ? matches[i + 1].index : text.length;
+    const content = text.slice(start, end).replace(/^[\s:]+/, "").trim();
+    if (content) parts.push({ role: matches[i].role, text: content });
+  }
+
+  if (parts.length === 0) {
+    // Fallback: treat whole text as a single assistant response
+    return [{ title: "Claude Conversation", content: text.trim() }];
+  }
+
+  // Extract only assistant turns, group consecutive ones and pair with preceding human turn as title
+  const entries: Entry[] = [];
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i].role !== "assistant") continue;
+    const assistantText = parts[i].text;
+    if (assistantText.length < 20) continue; // skip very short replies
+
+    // Use preceding human message as title hint
+    const humanTurn = i > 0 && parts[i - 1].role === "human" ? parts[i - 1].text : null;
+    const title = humanTurn ? humanTurn.slice(0, 80).replace(/\s+/g, " ") : undefined;
+
+    entries.push({ title, content: assistantText });
+  }
+
+  return entries.filter(e => e.content.length > 30);
+}
+
 // ─── AI Summarize + Tag per entry ────────────────────────────────────────────
 
-async function summarizeEntry(content: string): Promise<{ summary: string; tags: string[] }> {
+async function summarizeEntry(content: string, promptOverride?: string): Promise<{ summary: string; tags: string[] }> {
   try {
+    const prompt = promptOverride ??
+      `Given this memory/note, write ONE concise summary sentence (max 120 chars) and extract 1–4 lowercase topic tags. Reply as JSON only: {"summary":"...","tags":["tag1","tag2"]}\n\nNote:\n${content.slice(0, 600)}`;
     const msg = await anthropic.messages.create({
       model: "claude-haiku-4-5",
       max_tokens: 150,
-      messages: [{
-        role: "user",
-        content: `Given this memory/note, write ONE concise summary sentence (max 120 chars) and extract 1–4 lowercase topic tags. Reply as JSON only: {"summary":"...","tags":["tag1","tag2"]}\n\nNote:\n${content.slice(0, 600)}`,
-      }],
+      messages: [{ role: "user", content: prompt }],
     });
     const raw = (msg.content[0] as any).text?.trim() ?? "{}";
     const cleaned = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
@@ -133,13 +170,23 @@ async function summarizeEntry(content: string): Promise<{ summary: string; tags:
   }
 }
 
+async function summarizeClaudeTurn(content: string): Promise<{ summary: string; tags: string[] }> {
+  const prompt = `This is a response from a Claude AI conversation. Extract the key insight, decision, or knowledge from it in ONE concise sentence (max 120 chars). Also extract 1–4 lowercase topic tags. Always include the tag "claude-conversation". Reply as JSON only: {"summary":"...","tags":["claude-conversation","tag2"]}\n\nAssistant response:\n${content.slice(0, 800)}`;
+  const result = await summarizeEntry(content, prompt);
+  // Ensure claude-conversation tag is always present
+  if (!result.tags.includes("claude-conversation")) {
+    result.tags.unshift("claude-conversation");
+  }
+  return result;
+}
+
 // ─── Import route ─────────────────────────────────────────────────────────────
 
 router.post("/import/:source", requireAuth, upload.single("file"), async (req, res): Promise<void> => {
   const user = (req as AuthRequest).user;
   const source = req.params.source;
 
-  const validSources = ["chatgpt", "notion", "obsidian", "readwise", "evernote", "text"];
+  const validSources = ["chatgpt", "notion", "obsidian", "readwise", "evernote", "text", "claude"];
   if (!validSources.includes(source)) {
     res.status(400).json({ error: "Unknown source" });
     return;
@@ -160,6 +207,10 @@ router.post("/import/:source", requireAuth, upload.single("file"), async (req, r
       const text = String(req.body?.text ?? "").trim();
       if (!text) { send({ error: "No text provided" }); res.end(); return; }
       entries = parsePlainText(text);
+    } else if (source === "claude") {
+      const text = String(req.body?.text ?? "").trim();
+      if (!text) { send({ error: "No conversation text provided" }); res.end(); return; }
+      entries = parseClaudeConversation(text);
     } else {
       const file = req.file;
       if (!file) { send({ error: "No file uploaded" }); res.end(); return; }
@@ -198,7 +249,9 @@ router.post("/import/:source", requireAuth, upload.single("file"), async (req, r
 
     await Promise.allSettled(batch.map(async (entry) => {
       try {
-        const { summary, tags } = await summarizeEntry(entry.content);
+        const { summary, tags } = source === "claude"
+          ? await summarizeClaudeTurn(entry.content)
+          : await summarizeEntry(entry.content);
         await db.insert(importedMemoriesTable).values({
           userId: user.id,
           source,

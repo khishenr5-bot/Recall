@@ -15,6 +15,7 @@ const SOURCE_ICONS: Record<string, string> = {
   readwise: "📖",
   evernote: "🐘",
   text: "✏️",
+  claude: "✨",
 };
 
 function useMemoryStats() {
