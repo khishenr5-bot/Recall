@@ -1,18 +1,37 @@
 {
-  "name": "Recall.ai",
+  "name": "Recall AI",
   "short_name": "Recall",
-  "description": "Understand more. Read less. Your AI second brain.",
+  "description": "Your AI second brain. Save, summarise, and understand anything.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4f46e5",
   "orientation": "portrait",
+  "background_color": "#060e20",
+  "theme_color": "#a3a6ff",
+  "categories": ["productivity", "education", "utilities"],
   "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
     {
       "src": "/favicon.svg",
       "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/svg+xml"
     }
   ],
   "share_target": {
