@@ -194,6 +194,38 @@ export default function Home() {
     }
   }, []);
 
+  // Handle ?action=… from PWA shortcuts, share-target hand-off, file-handler, etc.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get("action");
+    if (!action) return;
+
+    if (action === "save") {
+      setInputMode("analyze");
+      setTimeout(() => urlInputRef.current?.focus(), 200);
+    } else if (action === "voice") {
+      setInputMode("voice");
+    } else if (action === "research") {
+      setInputMode("research");
+      const q = params.get("q");
+      if (q) setResearchQuestion(q);
+    } else if (action === "open-summary") {
+      const cached = sessionStorage.getItem("recall_pending_summary");
+      if (cached) {
+        try {
+          setSummary(JSON.parse(cached));
+          sessionStorage.removeItem("recall_pending_summary");
+          setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth" }), 200);
+        } catch {}
+      }
+    }
+    // Strip the action param from the URL so it doesn't re-trigger
+    const cleaned = new URL(window.location.href);
+    cleaned.searchParams.delete("action");
+    cleaned.searchParams.delete("q");
+    window.history.replaceState({}, "", cleaned.pathname + (cleaned.search || ""));
+  }, []);
+
   const suggestQuestionsMutation = useSuggestQuestions({
     mutation: {
       onSuccess: (data) => setQuestions(data.questions),

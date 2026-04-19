@@ -1,0 +1,42 @@
+{
+  "type": "AdaptiveCard",
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Today's Digest",
+      "weight": "Bolder",
+      "size": "Medium",
+      "color": "Accent"
+    },
+    {
+      "type": "Container",
+      "$data": "${items}",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "${title}",
+          "weight": "Bolder",
+          "wrap": true,
+          "spacing": "Small"
+        },
+        {
+          "type": "TextBlock",
+          "text": "${verdict}",
+          "isSubtle": true,
+          "wrap": true,
+          "spacing": "None",
+          "size": "Small"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Open library",
+      "url": "${appUrl}"
+    }
+  ]
+}

@@ -26,6 +26,9 @@ import Notes from "@/pages/notes";
 import Canvas from "@/pages/canvas";
 import VoiceNotes from "@/pages/voice-notes";
 import ImportPage from "@/pages/import";
+import HandleFile from "@/pages/handle-file";
+import HandleProtocol from "@/pages/handle-protocol";
+import InstallExtension from "@/pages/install-extension";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,7 +62,10 @@ function Router() {
       <Route path="/canvas" component={() => <ProtectedRoute><Layout><Canvas /></Layout></ProtectedRoute>} />
       <Route path="/voice-notes" component={() => <ProtectedRoute><Layout><VoiceNotes /></Layout></ProtectedRoute>} />
       <Route path="/import" component={() => <ProtectedRoute><Layout><ImportPage /></Layout></ProtectedRoute>} />
-      
+      <Route path="/handle-file" component={() => <ProtectedRoute><HandleFile /></ProtectedRoute>} />
+      <Route path="/handle-protocol" component={HandleProtocol} />
+      <Route path="/install-extension" component={() => <Layout><InstallExtension /></Layout>} />
+
       <Route component={() => <Layout><NotFound /></Layout>} />
     </Switch>
   );

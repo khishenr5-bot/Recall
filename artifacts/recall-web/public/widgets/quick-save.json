@@ -1,0 +1,39 @@
+{
+  "type": "AdaptiveCard",
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Quick Save",
+      "weight": "Bolder",
+      "size": "Medium",
+      "color": "Accent"
+    },
+    {
+      "type": "TextBlock",
+      "text": "${recentCount} saves this week",
+      "spacing": "None",
+      "isSubtle": true,
+      "wrap": true
+    },
+    {
+      "type": "Input.Text",
+      "id": "url",
+      "placeholder": "Paste any URL…",
+      "style": "Url"
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Save & Summarise",
+      "verb": "save"
+    },
+    {
+      "type": "Action.OpenUrl",
+      "title": "Open Recall",
+      "url": "${appUrl}"
+    }
+  ]
+}

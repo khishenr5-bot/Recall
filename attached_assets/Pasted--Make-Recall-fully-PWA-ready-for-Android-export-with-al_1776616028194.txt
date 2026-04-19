@@ -1,0 +1,192 @@
+"Make Recall fully PWA-ready for Android export with all advanced manifest features. Do all of this:
+STEP 1 — Create public/manifest.json with all fields:
+json{
+  "id": "/",
+  "name": "Recall AI — Your Second Brain",
+  "short_name": "Recall",
+  "description": "Save, summarise, and understand anything. Your AI second brain for articles, YouTube, PDFs, and voice notes.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#060e20",
+  "theme_color": "#a3a6ff",
+  "lang": "en",
+  "dir": "ltr",
+  "orientation": "portrait-primary",
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "prefer_related_applications": false,
+  "categories": ["productivity", "education", "utilities"],
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "icons": [
+    { "src": "/icons/icon-72.png", "sizes": "72x72", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-96.png", "sizes": "96x96", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-152.png", "sizes": "152x152", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Recall AI Home — Summarise anything instantly"
+    },
+    {
+      "src": "/screenshots/library-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Your Library — All your saved knowledge"
+    },
+    {
+      "src": "/screenshots/home-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Recall AI on mobile"
+    },
+    {
+      "src": "/screenshots/library-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Library on mobile"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Save a URL",
+      "short_name": "Save URL",
+      "description": "Quickly save and summarise any URL",
+      "url": "/?action=save",
+      "icons": [{ "src": "/icons/shortcut-save.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Voice Note",
+      "short_name": "Voice",
+      "description": "Record a voice note",
+      "url": "/?action=voice",
+      "icons": [{ "src": "/icons/shortcut-voice.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "My Library",
+      "short_name": "Library",
+      "description": "Browse your saved articles",
+      "url": "/saved",
+      "icons": [{ "src": "/icons/shortcut-library.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Deep Research",
+      "short_name": "Research",
+      "description": "Start a deep research session",
+      "url": "/?action=research",
+      "icons": [{ "src": "/icons/shortcut-research.png", "sizes": "96x96" }]
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/handle-file",
+      "accept": {
+        "application/pdf": [".pdf"],
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+        "text/plain": [".txt"],
+        "application/epub+zip": [".epub"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+recall",
+      "url": "/handle-protocol?url=%s"
+    }
+  ],
+  "share_target": {
+    "action": "/share-target",
+    "method": "POST",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "note_taking": {
+    "new_note_url": "/?action=voice"
+  },
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "widgets": [
+    {
+      "name": "Quick Save",
+      "description": "Save a URL to Recall directly from your home screen",
+      "tag": "quick-save",
+      "template": "generic-template",
+      "ms_ac_template": "/widgets/quick-save.json",
+      "data": "/api/widget/quick-save",
+      "type": "application/json",
+      "screenshots": [{ "src": "/screenshots/widget-save.png", "sizes": "600x400" }],
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }],
+      "auth": true,
+      "update": 3600
+    },
+    {
+      "name": "Daily Digest",
+      "description": "See your top 3 saves from today",
+      "tag": "daily-digest",
+      "template": "generic-template",
+      "ms_ac_template": "/widgets/daily-digest.json",
+      "data": "/api/widget/digest",
+      "type": "application/json",
+      "screenshots": [{ "src": "/screenshots/widget-digest.png", "sizes": "600x400" }],
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }],
+      "auth": true,
+      "update": 86400
+    }
+  ],
+  "scope_extensions": [
+    { "origin": "https://recall-rkhishen98.replit.app" }
+  ]
+}
+STEP 2 — Generate all icons programmatically:
+Create a script scripts/generate-icons.js that uses the canvas npm package to generate all required icon sizes (72, 96, 128, 144, 152, 192, 384, 512) plus shortcut icons. Each icon should be a dark navy #060e20 square with a simple brain/neural icon in indigo #a3a6ff gradient drawn with canvas paths. Also generate maskable versions with safe zone padding. Save all to public/icons/ folder. Run the script.
+STEP 3 — Generate screenshots automatically:
+Create a script scripts/capture-screenshots.js using puppeteer to visit the app URL and capture screenshots at 1280x720 (wide) and 390x844 (narrow) for home page and library page. Save to public/screenshots/. Run the script.
+STEP 4 — Create widget API endpoints:
+Add GET /api/widget/quick-save — returns JSON with user's recent saves count and a save form template.
+Add GET /api/widget/digest — returns today's top 3 saved articles as JSON formatted for the widget.
+Both endpoints accept the user's API key as a query param for auth since widgets can't use JWT.
+STEP 5 — Create file handler page:
+Add route /handle-file in the React app. When a PDF, DOCX, TXT, or EPUB file is opened with Recall on Android, this page receives the file, automatically sends it to the summarise endpoint, and redirects to the result. Show a loading spinner while processing: 'Recall is reading your file...'
+STEP 6 — Create share target handler:
+Add route /share-target in the React app. Reads the shared URL or text from query params, automatically triggers summarisation, shows the result. Back button goes to library.
+STEP 7 — Handle shortcut actions on home page:
+On the home page, read the ?action query param on load:
+
+action=save → focus the URL input immediately
+action=voice → immediately start voice recording
+action=research → switch to Deep Research tab and focus input
+
+STEP 8 — Update service worker for full offline support:
+Update the service worker to cache: all app shell files, all icon files, last 50 saved articles from the library, the home page. When offline, show cached library content with an offline banner. Queue any save requests made offline and sync when back online using Background Sync API.
+STEP 9 — Add Web App manifest link in index.html:
+Ensure index.html head contains:
+html<link rel='manifest' href='/manifest.json'>
+<meta name='theme-color' content='#a3a6ff'>
+<meta name='mobile-web-app-capable' content='yes'>
+<meta name='apple-mobile-web-app-capable' content='yes'>
+<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent'>
+<meta name='apple-mobile-web-app-title' content='Recall AI'>
+<link rel='apple-touch-icon' href='/icons/icon-192.png'>
+<meta name='msapplication-TileImage' content='/icons/icon-144.png'>
+<meta name='msapplication-TileColor' content='#060e20'>
+STEP 10 — Package the Chrome extension into the PWA:
+Copy the extension folder contents into public/extension/. Add a page /install-extension that shows: 'Install the Recall Chrome Extension for one-click saving from any webpage' with a download button that serves the extension as a ZIP file from /extension/recall-extension.zip. Add instructions for loading as unpacked in Chrome. Link to this page from Settings under Integrations.
+After all steps complete, run a PWA audit and show me the manifest.json file contents and confirm all icon files were generated."

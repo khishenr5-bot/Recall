@@ -21,6 +21,7 @@ import researchRouter from "./research";
 import canvasRouter from "./canvas";
 import voiceNotesRouter from "./voice-notes";
 import importRouter from "./import";
+import widgetsRouter from "./widgets";
 
 const router: IRouter = Router();
 
@@ -46,5 +47,6 @@ router.use(researchRouter);
 router.use(canvasRouter);
 router.use(voiceNotesRouter);
 router.use(importRouter);
+router.use(widgetsRouter);
 
 export default router;

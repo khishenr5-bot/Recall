@@ -119,6 +119,16 @@ export default function Settings() {
         </form>
       </div>
 
+      <div className="bg-[var(--surface-high)] p-8 rounded-[0.5rem]">
+        <h2 className="text-xl font-bold text-[var(--on-surface)] mb-2 flex items-center gap-2" style={{ fontFamily: "var(--app-font-display)" }}><Download className="h-5 w-5 text-[var(--primary)]" /> Chrome extension</h2>
+        <p className="text-[var(--on-surface-muted)] text-sm mb-4">One-click save & summarise from any webpage.</p>
+        <a href="/install-extension">
+          <Button className="bg-[var(--surface-bright)] hover:bg-[var(--surface-highest)] border border-[var(--primary)] text-white">
+            Install extension
+          </Button>
+        </a>
+      </div>
+
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-[var(--surface-high)] p-8 rounded-[0.5rem]">
           <h2 className="text-xl font-bold text-[var(--on-surface)] mb-2 flex items-center gap-2" style={{ fontFamily: "var(--app-font-display)" }}><Link2 className="h-5 w-5 text-[var(--primary)]" /> Notion integration</h2>

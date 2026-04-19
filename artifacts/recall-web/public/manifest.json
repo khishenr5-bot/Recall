@@ -1,127 +1,159 @@
 {
   "id": "/",
-  "name": "Recall AI",
+  "name": "Recall AI — Your Second Brain",
   "short_name": "Recall",
-  "description": "Your AI second brain. Save, summarise, and understand anything — articles, PDFs, videos, and voice notes.",
-  "lang": "en",
-  "dir": "ltr",
-  "start_url": "/",
+  "description": "Save, summarise, and understand anything. Your AI second brain for articles, YouTube, PDFs, and voice notes.",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
-  "orientation": "portrait",
   "background_color": "#060e20",
   "theme_color": "#a3a6ff",
-  "categories": ["productivity", "education", "utilities", "books", "news"],
-  "iarc_rating_id": "",
+  "lang": "en",
+  "dir": "ltr",
+  "orientation": "portrait-primary",
   "prefer_related_applications": false,
   "related_applications": [],
+  "categories": ["productivity", "education", "utilities", "books", "news"],
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
   "icons": [
-    {
-      "src": "/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
-    }
+    { "src": "/icons/icon-72.png", "sizes": "72x72", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-96.png", "sizes": "96x96", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-152.png", "sizes": "152x152", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ],
   "screenshots": [
     {
-      "src": "/screenshots/mobile-home.jpg",
-      "sizes": "412x915",
-      "type": "image/jpeg",
-      "form_factor": "narrow",
-      "label": "Recall home screen on mobile"
-    },
-    {
-      "src": "/screenshots/desktop-home.jpg",
-      "sizes": "1280x800",
+      "src": "/screenshots/home-wide.jpg",
+      "sizes": "1280x720",
       "type": "image/jpeg",
       "form_factor": "wide",
-      "label": "Recall dashboard on desktop"
+      "label": "Recall AI Home — Summarise anything instantly"
+    },
+    {
+      "src": "/screenshots/library-wide.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Your Library — All your saved knowledge"
+    },
+    {
+      "src": "/screenshots/home-mobile.jpg",
+      "sizes": "390x844",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Recall AI on mobile"
+    },
+    {
+      "src": "/screenshots/library-mobile.jpg",
+      "sizes": "390x844",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Library on mobile"
     }
   ],
   "shortcuts": [
     {
-      "name": "Save Article",
-      "short_name": "Save",
-      "description": "Quickly save and summarise a URL",
+      "name": "Save a URL",
+      "short_name": "Save URL",
+      "description": "Quickly save and summarise any URL",
       "url": "/?action=save",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [{ "src": "/icons/shortcut-save.png", "sizes": "96x96", "type": "image/png" }]
     },
     {
       "name": "Voice Note",
       "short_name": "Voice",
-      "description": "Capture a thought with your voice",
-      "url": "/voice-notes?action=new",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "description": "Record a voice note",
+      "url": "/?action=voice",
+      "icons": [{ "src": "/icons/shortcut-voice.png", "sizes": "96x96", "type": "image/png" }]
     },
     {
-      "name": "Library",
+      "name": "My Library",
       "short_name": "Library",
-      "description": "Browse your saved knowledge",
+      "description": "Browse your saved articles",
       "url": "/saved",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [{ "src": "/icons/shortcut-library.png", "sizes": "96x96", "type": "image/png" }]
     },
     {
-      "name": "Insights",
-      "short_name": "Insights",
-      "description": "View your reading DNA and streak",
-      "url": "/insights",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "name": "Deep Research",
+      "short_name": "Research",
+      "description": "Start a deep research session",
+      "url": "/?action=research",
+      "icons": [{ "src": "/icons/shortcut-research.png", "sizes": "96x96", "type": "image/png" }]
     }
   ],
-  "share_target": {
-    "action": "/share-target",
-    "method": "GET",
-    "enctype": "application/x-www-form-urlencoded",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  },
   "file_handlers": [
     {
-      "action": "/import",
+      "action": "/handle-file",
       "accept": {
-        "text/plain": [".txt", ".md", ".markdown"],
+        "application/pdf": [".pdf"],
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+        "text/plain": [".txt"],
+        "text/markdown": [".md"],
         "application/json": [".json"],
         "text/csv": [".csv"],
-        "application/pdf": [".pdf"]
+        "application/epub+zip": [".epub"]
       }
     }
   ],
   "protocol_handlers": [
     {
       "protocol": "web+recall",
-      "url": "/?url=%s"
+      "url": "/handle-protocol?url=%s"
     }
   ],
-  "launch_handler": {
-    "client_mode": ["navigate-existing", "auto"]
-  },
-  "edge_side_panel": {
-    "preferred_width": 480
+  "share_target": {
+    "action": "/share-target",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
   },
   "note_taking": {
-    "new_note_url": "/notes?action=new"
+    "new_note_url": "/?action=voice"
   },
-  "handle_links": "preferred"
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "widgets": [
+    {
+      "name": "Quick Save",
+      "description": "Save a URL to Recall directly from your home screen",
+      "tag": "quick-save",
+      "template": "generic-template",
+      "ms_ac_template": "/widgets/quick-save.json",
+      "data": "/api/widget/quick-save",
+      "type": "application/json",
+      "screenshots": [
+        { "src": "/screenshots/widget-save.png", "sizes": "600x400", "label": "Quick Save widget" }
+      ],
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }],
+      "auth": true,
+      "update": 3600
+    },
+    {
+      "name": "Daily Digest",
+      "description": "See your top 3 saves from today",
+      "tag": "daily-digest",
+      "template": "generic-template",
+      "ms_ac_template": "/widgets/daily-digest.json",
+      "data": "/api/widget/digest",
+      "type": "application/json",
+      "screenshots": [
+        { "src": "/screenshots/widget-digest.png", "sizes": "600x400", "label": "Daily Digest widget" }
+      ],
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }],
+      "auth": true,
+      "update": 86400
+    }
+  ]
 }

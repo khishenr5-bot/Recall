@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>You're offline · Recall AI</title>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#a3a6ff" />
+    <style>
+      :root { color-scheme: dark; }
+      html, body {
+        margin: 0; height: 100%;
+        background: #060e20; color: #e7e9ff;
+        font-family: -apple-system, system-ui, sans-serif;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .card {
+        max-width: 380px; padding: 32px; text-align: center;
+        background: rgba(163,166,255,0.05);
+        border: 1px solid rgba(163,166,255,0.2); border-radius: 20px;
+      }
+      h1 { color: #a3a6ff; font-size: 22px; margin: 16px 0 8px; }
+      p { color: #a3a6ffaa; font-size: 14px; line-height: 1.5; }
+      a {
+        display: inline-block; margin-top: 18px; padding: 10px 22px;
+        background: linear-gradient(135deg, #a3a6ff, #c180ff);
+        color: #060e20; border-radius: 12px;
+        text-decoration: none; font-weight: 600;
+      }
+      .icon { font-size: 36px; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="icon">🌐</div>
+      <h1>You're offline</h1>
+      <p>Recall is saving anything you submit and will sync when you're back online. Your library is available from the cache.</p>
+      <a href="/saved">Open library</a>
+    </div>
+  </body>
+</html>
