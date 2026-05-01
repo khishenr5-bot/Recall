@@ -29,12 +29,12 @@ router.get("/widget/quick-save", async (req, res) => {
       .select({ count: sql<number>`count(*)::int` })
       .from(savedArticlesTable)
       .where(and(eq(savedArticlesTable.userId, userId), gte(savedArticlesTable.createdAt, weekAgo)));
-    res.json({
+    return res.json({
       template: "generic-template",
       data: { recentCount: rows[0]?.count ?? 0, appUrl },
     });
   } catch {
-    res.json({ template: "generic-template", data: { recentCount: 0, appUrl } });
+    return res.json({ template: "generic-template", data: { recentCount: 0, appUrl } });
   }
 });
 
@@ -62,7 +62,7 @@ router.get("/widget/digest", async (req, res) => {
       .where(and(eq(savedArticlesTable.userId, userId), gte(savedArticlesTable.createdAt, dayAgo)))
       .orderBy(desc(savedArticlesTable.createdAt))
       .limit(3);
-    res.json({
+    return res.json({
       template: "generic-template",
       data: {
         appUrl,
@@ -74,7 +74,7 @@ router.get("/widget/digest", async (req, res) => {
       },
     });
   } catch {
-    res.json({ template: "generic-template", data: { items: [], appUrl } });
+    return res.json({ template: "generic-template", data: { items: [], appUrl } });
   }
 });
 
