@@ -65,6 +65,14 @@ Routes:
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
+## Database
+
+The app uses **Supabase PostgreSQL** as its primary database (migrated May 2026).
+- Connection is established via `SUPABASE_DATABASE_URL` (Transaction pooler, port 6543)
+- Falls back to `DATABASE_URL` if `SUPABASE_DATABASE_URL` is not set
+- `search_path=public` is set explicitly on every connection (required for Supabase pooler)
+- Schema managed via Drizzle ORM (`lib/db/src/`)
+
 ## Optional Environment Variables (for extra features)
 
 - `RESEND_API_KEY` — For sending daily digest emails
