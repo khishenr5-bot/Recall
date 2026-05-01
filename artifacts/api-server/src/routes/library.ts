@@ -1,8 +1,36 @@
 import { Router } from "express";
-import { db, savedArticlesTable, usersTable, collectionsTable } from "@workspace/db";
+import { db, savedArticlesTable, usersTable, collectionsTable, actionItemsTable } from "@workspace/db";
 import { eq, and, desc, asc, count, ilike, or, sql, avg } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../lib/auth";
 import { v4 as uuidv4 } from "uuid";
+import { extractActionItems } from "../lib/actions-ai";
+
+async function extractActionItemsForArticle(
+  articleId: number,
+  userId: number,
+  title: string,
+  bullets: string[]
+): Promise<void> {
+  try {
+    const extracted = await extractActionItems(title, Array.isArray(bullets) ? bullets : []);
+    await db
+      .update(savedArticlesTable)
+      .set({ intentType: extracted.intentType, actionItemsExtracted: true })
+      .where(eq(savedArticlesTable.id, articleId));
+    if (extracted.actions.length) {
+      await db.insert(actionItemsTable).values(
+        extracted.actions.map((action) => ({
+          userId,
+          articleId,
+          action,
+          intentType: extracted.intentType,
+        }))
+      );
+    }
+  } catch {
+    // best-effort; swallowed at the call site too
+  }
+}
 import {
   GetSavedArticlesQueryParams,
   SaveArticleBody,
@@ -128,6 +156,11 @@ router.post("/saved", requireAuth, async (req, res): Promise<void> => {
   await db.update(usersTable)
     .set({ monthlySavesCount: sql`${usersTable.monthlySavesCount} + 1` })
     .where(eq(usersTable.id, user.id));
+
+  // Fire-and-forget: extract action items in the background. We don't await this so the save
+  // response stays fast; the /actions page picks up the items once they land.
+  extractActionItemsForArticle(article.id, user.id, article.title, article.bullets as string[])
+    .catch((err) => req.log?.warn?.({ err, articleId: article.id }, "Background action extraction failed"));
 
   res.status(201).json(formatArticle(article));
 });

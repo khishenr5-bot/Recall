@@ -27,6 +27,8 @@ export const savedArticlesTable = pgTable("saved_articles", {
   readingProgress: integer("reading_progress").notNull().default(0),
   isRss: boolean("is_rss").notNull().default(false),
   rssFeedId: integer("rss_feed_id"),
+  intentType: text("intent_type").notNull().default("general"),
+  actionItemsExtracted: boolean("action_items_extracted").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

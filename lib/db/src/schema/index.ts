@@ -9,3 +9,4 @@ export * from "./canvas_sessions";
 export * from "./research_reports";
 export * from "./voice_notes";
 export * from "./imported_memories";
+export * from "./action_items";

@@ -1,0 +1,78 @@
+Build the Action Engine feature for Recall — it closes the gap between saving content and actually doing something with it.
+STEP 1 — Supabase tables:
+sql-- Store extracted action items from saved articles
+CREATE TABLE action_items (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  article_id UUID REFERENCES saved_articles(id) ON DELETE CASCADE,
+  action TEXT NOT NULL,
+  intent_type TEXT DEFAULT 'general',
+  status TEXT DEFAULT 'pending',
+  priority INT DEFAULT 3,
+  due_date DATE,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE action_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY 'Users manage own actions' ON action_items
+  FOR ALL USING (auth.uid() = user_id);
+
+-- Store weekly action plans
+CREATE TABLE action_plans (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  week_start DATE NOT NULL,
+  plan_json JSONB NOT NULL,
+  generated_at TIMESTAMPTZ DEFAULT NOW(),
+  user_goals TEXT
+);
+ALTER TABLE action_plans ENABLE ROW LEVEL SECURITY;
+CREATE POLICY 'Users manage own plans' ON action_plans
+  FOR ALL USING (auth.uid() = user_id);
+
+-- Store user goals
+ALTER TABLE saved_articles ADD COLUMN IF NOT EXISTS intent_type TEXT DEFAULT 'general';
+ALTER TABLE saved_articles ADD COLUMN IF NOT EXISTS action_items_extracted BOOLEAN DEFAULT FALSE;
+STEP 2 — Auto-extract actions when article is saved:
+In the existing POST /api/summarize endpoint, after generating the summary, add a background call to Claude Haiku:
+Prompt: 'Analyze this article and extract concrete actionable items. Article: [title + bullets]. Return JSON only: { intent_type: one of [tool/roadmap/strategy/tutorial/resource/inspiration], actions: [array of max 5 specific action strings starting with a verb like Install, Read, Try, Build, Set up, Apply, Review] }. If the article has no clear actions, return { intent_type: resource, actions: [] }'
+Store the intent_type on the saved_articles row. Insert each action into the action_items table with status pending, linked to the article_id.
+STEP 3 — New route POST /api/action-plan/generate:
+Accepts optional { goals } string.
+Fetches all pending action_items for the user from the last 30 days with their linked article titles.
+Fetches user's stated goals from their profile.
+Sends to Claude Haiku:
+'You are helping an indie founder turn their saved content into a real action plan. Their goals: [goals]. Their pending actions from saved content: [list of action items with source article]. Generate a focused weekly action plan. Return JSON: { week_theme: one sentence theme for the week, daily_actions: { monday: [2 actions], tuesday: [2 actions], wednesday: [2 actions], thursday: [2 actions], friday: [2 actions] }, quick_wins: [3 actions completable in under 10 minutes], tools_to_try: [tools saved but never acted on, max 3], insight: one honest observation about what they save vs what they actually need to do }'
+Save the plan to action_plans table. Return the plan.
+STEP 4 — New route GET /api/action-plan/current:
+Returns the most recent action_plan for the current week. If none exists for this week, auto-generates one.
+STEP 5 — New route PATCH /api/action-items/:id:
+Updates action status to completed or snoozed. Sets completed_at timestamp.
+STEP 6 — New route GET /api/action-items/pending:
+Returns all pending action items grouped by intent_type, ordered by created_at.
+STEP 7 — Action Engine page at /actions — add to sidebar with a lightning bolt icon:
+The page has three sections:
+TOP SECTION — This Week's Plan:
+A card showing the week_theme in large Manrope text.
+Five day columns (Mon-Fri) each showing 2 action items as checkboxes.
+Checking an action calls PATCH /api/action-items/:id to mark complete.
+A progress bar showing X of 10 actions completed this week.
+Regenerate Plan button.
+MIDDLE SECTION — Quick Wins:
+Three action items shown as large clickable cards with a lightning emoji.
+Label: 'Do these right now — each takes under 10 minutes'
+Each card shows the action + the source article it came from as a small link.
+BOTTOM SECTION — Your Pending Actions:
+All pending action items from all saved articles, grouped by intent_type.
+Tabs: Tools to Try | Roadmaps | Tutorials | Strategies
+Each item shows: action text, source article title, days since saved, Complete and Snooze buttons.
+Snoozed items reappear after 7 days.
+INSIGHT BOX:
+Show the AI insight as a pull quote in indigo — honest observation about their saving vs doing habits.
+Example: 'You have saved 14 productivity frameworks in the last 30 days but have completed 0 actions from them.'
+STEP 8 — Goal setting in Settings:
+Add a Goals section in the Settings page with a text area: 'What are you working toward right now? Be specific.' Example placeholder: 'Get Recall to 100 paying users by June. Launch on Product Hunt. Fix the library bug.' Save to user profile in Supabase. This context is used every time the action plan is generated.
+STEP 9 — Home page integration:
+Add a small Action Engine widget on the home page below the URL input — shown only to logged-in users. Shows: today's 2 actions from the weekly plan as checkboxes. A 'See full plan' link to /actions. If no plan exists yet: 'Generate your first action plan from your saved content' button.
+STEP 10 — Weekly email digest update:
+Update the existing weekly digest email to include the action plan at the top. Subject line: 'Your Recall action plan for this week'. Show the week_theme, today's 2 actions, and 3 quick wins. This email replaces the generic digest for Pro users."

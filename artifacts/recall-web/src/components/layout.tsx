@@ -21,6 +21,7 @@ import {
   Layers,
   Mic,
   Download,
+  Zap,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -46,6 +47,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navLinks = [
     { href: "/saved", label: "Library", icon: BookMarked },
+    { href: "/actions", label: "Actions", icon: Zap },
     { href: "/notes", label: "Notes", icon: NotebookPen },
     { href: "/voice-notes", label: "Voice Notes", icon: Mic },
     { href: "/import", label: "Import Memory", icon: Download },

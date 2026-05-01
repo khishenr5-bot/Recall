@@ -18,6 +18,7 @@ export const usersTable = pgTable("users", {
   bestStreak: integer("best_streak").notNull().default(0),
   lastActiveDate: text("last_active_date"),
   weeklyReadingGoal: integer("weekly_reading_goal").notNull().default(7),
+  goals: text("goals"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

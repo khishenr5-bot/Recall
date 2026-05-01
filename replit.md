@@ -77,6 +77,17 @@ Uses Replit's built-in Anthropic integration (no API key needed from user). Uses
 - `claude-haiku-4-5` for fast summarization, question suggestion, reading DNA
 - `claude-sonnet-4-6` for Ask My Library (needs richer context synthesis)
 
+## Action Engine (added May 2026)
+
+Turns saved articles into a real weekly action plan instead of a passive read-later list.
+
+- **Schema**: `action_items` (one row per extracted action, with `status`, `intent_type`, `snoozed_until`, `completed_at`), `action_plans` (one per `(user_id, week_start)` storing `plan_json`), plus `users.goals` and `saved_articles.intent_type` / `action_items_extracted`.
+- **AI extraction**: when an article is saved (`POST /api/saved`), the server kicks off a fire-and-forget call to `extractActionItems()` (Claude Haiku) which fills in the article's `intent_type` and inserts up to 5 action items.
+- **Weekly plan**: `GET /api/action-plan/current` returns this week's plan (auto-generates if missing and the user has any saves). `POST /api/action-plan/generate` force-regenerates. Plans are stored as `{ topActions: [{action, articleTitle?, rationale?}], insight }` and serialized into a flat shape for the UI.
+- **User goals**: `GET/PATCH /api/user/goals` — used as personalization context when generating plans. Edited from the Settings page (`textarea-goals`).
+- **Pending list**: `GET /api/action-items/pending` returns items grouped by `intent_type` (snoozed items reappear after 7 days) plus `{ saved, completed, pending }` stats over the last 30 days. `PATCH /api/action-items/:id` accepts `status: "completed" | "snoozed" | "pending"`.
+- **Frontend**: new `/actions` page (`pages/actions.tsx`), Actions item in the sidebar with the lightning-bolt icon, "Today's actions" widget below the URL form on home (`components/home-actions-widget.tsx`), goals textarea in Settings, weekly digest email and `/report/weekly` updated to include the latest action plan.
+
 ## Free vs Pro Plan
 
 - **Free**: 50 saves/month, basic features

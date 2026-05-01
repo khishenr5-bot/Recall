@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
-import { Loader2, Download, FileJson, FileText, Sheet, Link2, Upload, FileUp, Zap, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Download, FileJson, FileText, Sheet, Link2, Upload, FileUp, Zap, CheckCircle2, XCircle, Target } from "lucide-react";
 
 export default function Settings() {
   const { user } = useAuth();
@@ -16,6 +16,39 @@ export default function Settings() {
   const [language, setLanguage] = useState(user?.preferredLanguage || "en");
   const [exportLoading, setExportLoading] = useState<string | null>(null);
   
+  const [goals, setGoals] = useState("");
+  const [goalsLoading, setGoalsLoading] = useState(false);
+  const [goalsSaving, setGoalsSaving] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("recall_token");
+    if (!token) return;
+    setGoalsLoading(true);
+    fetch("/api/user/goals", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : { goals: "" })
+      .then(d => setGoals(d.goals ?? ""))
+      .catch(() => {})
+      .finally(() => setGoalsLoading(false));
+  }, []);
+
+  const saveGoals = async () => {
+    setGoalsSaving(true);
+    try {
+      const token = localStorage.getItem("recall_token");
+      const res = await fetch("/api/user/goals", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ goals }),
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: "Goals saved" });
+    } catch {
+      toast({ title: "Couldn't save goals", variant: "destructive" });
+    } finally {
+      setGoalsSaving(false);
+    }
+  };
+
   const [notionStatus, setNotionStatus] = useState<{ connected: boolean; workspaceName?: string; autoSync?: boolean } | null>(null);
   const [notionSyncing, setNotionSyncing] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
@@ -117,6 +150,27 @@ export default function Settings() {
             {updateProfileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save changes
           </Button>
         </form>
+      </div>
+
+      <div className="bg-[var(--surface-high)] p-8 rounded-[0.5rem]">
+        <h2 className="text-xl font-bold text-[var(--on-surface)] mb-2 flex items-center gap-2" style={{ fontFamily: "var(--app-font-display)" }}><Target className="h-5 w-5 text-[var(--primary)]" /> Your goals</h2>
+        <p className="text-[var(--on-surface-muted)] text-sm mb-4">Tell Recall what you're working toward. Your weekly action plans will be tailored around these themes.</p>
+        <textarea
+          value={goals}
+          onChange={(e) => setGoals(e.target.value)}
+          disabled={goalsLoading}
+          rows={4}
+          maxLength={2000}
+          placeholder="e.g. Ship my SaaS side-project, get fluent in Spanish, learn Rust..."
+          className="input-glow w-full p-4 rounded-lg bg-[var(--surface-highest)] border border-[var(--outline-variant)] text-[var(--on-surface)] resize-none"
+          data-testid="textarea-goals"
+        />
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-xs text-[var(--on-surface-muted)]">{goals.length}/2000</span>
+          <Button onClick={saveGoals} className="gradient-btn px-6" disabled={goalsSaving || goalsLoading} data-testid="button-save-goals">
+            {goalsSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save goals
+          </Button>
+        </div>
       </div>
 
       <div className="bg-[var(--surface-high)] p-8 rounded-[0.5rem]">

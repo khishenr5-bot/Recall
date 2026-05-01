@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
+import { HomeActionsWidget } from "@/components/home-actions-widget";
 
 declare global {
   interface Window {
@@ -805,6 +806,8 @@ export default function Home() {
             </div>
           </form>
           )}
+
+          {user && !summary && <HomeActionsWidget />}
         </motion.div>
       </div>
 

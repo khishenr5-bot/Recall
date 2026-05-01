@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, savedArticlesTable } from "@workspace/db";
-import { eq, desc, gte } from "drizzle-orm";
+import { db, savedArticlesTable, actionPlansTable, actionItemsTable } from "@workspace/db";
+import { eq, desc, gte, and } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../lib/auth";
 
 const router = Router();
@@ -52,6 +52,17 @@ router.post("/digest/send", requireAuth, async (req, res): Promise<void> => {
     .orderBy(desc(savedArticlesTable.createdAt))
     .limit(3);
 
+  // Pull latest weekly plan + pending action count for digest body
+  const [latestPlan] = await db.select()
+    .from(actionPlansTable)
+    .where(eq(actionPlansTable.userId, user.id))
+    .orderBy(desc(actionPlansTable.generatedAt))
+    .limit(1);
+  const latestPlanJson = (latestPlan?.planJson ?? {}) as { topActions?: Array<{ action: string; rationale?: string }>; insight?: string };
+  const pending = await db.select({ id: actionItemsTable.id })
+    .from(actionItemsTable)
+    .where(and(eq(actionItemsTable.userId, user.id), eq(actionItemsTable.status, "pending")));
+
   // If RESEND_API_KEY is configured, send email
   const resendKey = process.env.RESEND_API_KEY;
   if (resendKey && articles.length > 0) {
@@ -60,6 +71,13 @@ router.post("/digest/send", requireAuth, async (req, res): Promise<void> => {
         const bullets = (a.bullets as string[]).slice(0, 2).map(b => `• ${b}`).join("\n");
         return `📖 ${a.title}\n\n${a.verdict}\n\n${bullets}`;
       }).join("\n\n---\n\n");
+
+      let actionsBlock = "";
+      if (latestPlan) {
+        const top = latestPlanJson.topActions ?? [];
+        const topText = top.slice(0, 3).map((a, i) => `${i + 1}. ${a.action}${a.rationale ? `\n   ${a.rationale}` : ""}`).join("\n");
+        actionsBlock = `\n\n=== YOUR WEEKLY ACTION PLAN ===\n\n${topText}\n\n${latestPlanJson.insight ?? ""}\n\nPending across your library: ${pending.length}\n`;
+      }
 
       await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -71,7 +89,7 @@ router.post("/digest/send", requireAuth, async (req, res): Promise<void> => {
           from: "Recall.ai <digest@recall.ai>",
           to: user.email,
           subject: `Your Recall.ai Daily Digest — ${new Date().toLocaleDateString()}`,
-          text: `Your Daily Reading Digest\n\n${emailContent}\n\n---\nRecall.ai — Understand more. Read less.`,
+          text: `Your Daily Reading Digest\n\n${emailContent}${actionsBlock}\n\n---\nRecall.ai — Understand more. Read less.`,
         }),
       });
     } catch (err) {
@@ -96,6 +114,14 @@ router.get("/report/weekly", requireAuth, async (req, res): Promise<void> => {
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - 7);
 
+  // Include the latest action plan so the weekly report can render it
+  const [latestPlan] = await db.select()
+    .from(actionPlansTable)
+    .where(eq(actionPlansTable.userId, user.id))
+    .orderBy(desc(actionPlansTable.generatedAt))
+    .limit(1);
+  const latestPlanJson = (latestPlan?.planJson ?? {}) as { topActions?: unknown; insight?: string };
+
   res.json({
     weekStart: weekStart.toISOString(),
     weekEnd: new Date().toISOString(),
@@ -105,6 +131,13 @@ router.get("/report/weekly", requireAuth, async (req, res): Promise<void> => {
     insights: articles.length > 0
       ? `You saved ${articles.length} articles this week. Your top topics were diverse and intellectually stimulating.`
       : "Start saving articles to get your weekly reading report.",
+    actionPlan: latestPlan
+      ? {
+          weekStart: latestPlan.weekStart,
+          topActions: Array.isArray(latestPlanJson.topActions) ? latestPlanJson.topActions : [],
+          insight: typeof latestPlanJson.insight === "string" ? latestPlanJson.insight : "",
+        }
+      : null,
   });
 });
 

@@ -29,6 +29,7 @@ import ImportPage from "@/pages/import";
 import HandleFile from "@/pages/handle-file";
 import HandleProtocol from "@/pages/handle-protocol";
 import InstallExtension from "@/pages/install-extension";
+import Actions from "@/pages/actions";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,7 @@ function Router() {
       <Route path="/wrapped" component={() => <Layout><Wrapped /></Layout>} />
 
       <Route path="/saved" component={() => <ProtectedRoute><Layout><Saved /></Layout></ProtectedRoute>} />
+      <Route path="/actions" component={() => <ProtectedRoute><Layout><Actions /></Layout></ProtectedRoute>} />
       <Route path="/highlights" component={() => <ProtectedRoute><Layout><Highlights /></Layout></ProtectedRoute>} />
       <Route path="/insights" component={() => <ProtectedRoute><Layout><Insights /></Layout></ProtectedRoute>} />
       <Route path="/graph" component={() => <ProtectedRoute><Layout><Graph /></Layout></ProtectedRoute>} />

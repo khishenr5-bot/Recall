@@ -22,6 +22,7 @@ import canvasRouter from "./canvas";
 import voiceNotesRouter from "./voice-notes";
 import importRouter from "./import";
 import widgetsRouter from "./widgets";
+import actionsRouter from "./actions";
 
 const router: IRouter = Router();
 
@@ -48,5 +49,6 @@ router.use(canvasRouter);
 router.use(voiceNotesRouter);
 router.use(importRouter);
 router.use(widgetsRouter);
+router.use(actionsRouter);
 
 export default router;
