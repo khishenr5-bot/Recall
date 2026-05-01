@@ -118,6 +118,7 @@ function parseClaudeConversation(text: string): Entry[] {
     matches.push({ role: m[1].toLowerCase(), index: m.index + m[0].indexOf(m[1]) });
   }
 
+  const parts: { role: string; text: string }[] = [];
   for (let i = 0; i < matches.length; i++) {
     const start = matches[i].index + matches[i].role.length + 1; // skip "Role:"
     const end = i + 1 < matches.length ? matches[i + 1].index : text.length;
@@ -184,7 +185,7 @@ async function summarizeClaudeTurn(content: string): Promise<{ summary: string; 
 
 router.post("/import/:source", requireAuth, upload.single("file"), async (req, res): Promise<void> => {
   const user = (req as AuthRequest).user;
-  const source = req.params.source;
+  const source = req.params.source as string;
 
   const validSources = ["chatgpt", "notion", "obsidian", "readwise", "evernote", "text", "claude"];
   if (!validSources.includes(source)) {
