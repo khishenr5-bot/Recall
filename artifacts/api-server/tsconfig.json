@@ -6,7 +6,8 @@
     "types": ["node"],
     "skipLibCheck": true,
     "strict": false,
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "strictNullChecks": false
   },
   "include": ["src"],
   "references": [
