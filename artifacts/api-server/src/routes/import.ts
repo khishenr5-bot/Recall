@@ -111,6 +111,7 @@ function parsePlainText(text: string): Entry[] {
 
 function parseClaudeConversation(text: string): Entry[] {
   // Split on Human: / Assistant: turn markers (case-insensitive)
+  const parts: { role: string; text: string }[] = [];
   const matches: { role: string; index: number }[] = [];
   let m: RegExpExecArray | null;
   const re = /(?:^|\n)(Human|Assistant)\s*:/gi;
@@ -184,7 +185,7 @@ async function summarizeClaudeTurn(content: string): Promise<{ summary: string; 
 
 router.post("/import/:source", requireAuth, upload.single("file"), async (req, res): Promise<void> => {
   const user = (req as AuthRequest).user;
-  const source = req.params.source;
+  const source = req.params.source as string;
 
   const validSources = ["chatgpt", "notion", "obsidian", "readwise", "evernote", "text", "claude"];
   if (!validSources.includes(source)) {
