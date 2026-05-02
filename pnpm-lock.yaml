@@ -21,9 +21,6 @@ catalogs:
     '@tanstack/react-query':
       specifier: ^5.90.21
       version: 5.90.21
-    '@types/archiver':
-      specifier: ^7.0.0
-      version: 7.0.0
     '@types/node':
       specifier: ^25.3.3
       version: 25.3.5
@@ -180,8 +177,8 @@ importers:
         specifier: ^0.5.8
         version: 0.5.8
       '@types/archiver':
-        specifier: 'catalog:'
-        version: 7.0.0
+        specifier: ^6.0.3
+        version: 6.0.4
       '@types/bcryptjs':
         specifier: ^2.4.6
         version: 2.4.6
@@ -2013,8 +2010,8 @@ packages:
   '@types/adm-zip@0.5.8':
     resolution: {integrity: sha512-RVVH7QvZYbN+ihqZ4kX/dMiowf6o+Jk1fNwiSdx0NahBJLU787zkULhGhJM8mf/obmLGmgdMM0bXsQTmyfbR7Q==}
 
-  '@types/archiver@7.0.0':
-    resolution: {integrity: sha512-/3vwGwx9n+mCQdYZ2IKGGHEFL30I96UgBlk8EtRDDFQ9uxM1l4O5Ci6r00EMAkiDaTqD9DQ6nVrWRICnBPtzzg==}
+  '@types/archiver@6.0.4':
+    resolution: {integrity: sha512-ULdQpARQ3sz9WH4nb98mJDYA0ft2A8C4f4fovvUcFwINa1cgGjY36JCAYuP5YypRq4mco1lJp1/7jEMS2oR0Hg==}
 
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
@@ -5751,7 +5748,7 @@ snapshots:
     dependencies:
       '@types/node': 25.3.5
 
-  '@types/archiver@7.0.0':
+  '@types/archiver@6.0.4':
     dependencies:
       '@types/readdir-glob': 1.1.5
 
