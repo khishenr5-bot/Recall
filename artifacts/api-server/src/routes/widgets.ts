@@ -12,16 +12,17 @@ function authFromQuery(req: any): number | null {
   return payload?.userId ?? null;
 }
 
-router.get("/widget/quick-save", async (req, res) => {
+router.get("/widget/quick-save", async (req, res): Promise<void> => {
   res.set("Cache-Control", "no-store");
   const userId = authFromQuery(req);
   const appUrl = `${req.protocol}://${req.get("host")}/?source=widget`;
   if (!userId) {
-    return res.json({
+    res.json({
       authRequired: true,
       template: "generic-template",
       data: { recentCount: 0, appUrl, message: "Sign in to use this widget" },
     });
+    return;
   }
   try {
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -38,16 +39,17 @@ router.get("/widget/quick-save", async (req, res) => {
   }
 });
 
-router.get("/widget/digest", async (req, res) => {
+router.get("/widget/digest", async (req, res): Promise<void> => {
   res.set("Cache-Control", "no-store");
   const userId = authFromQuery(req);
   const appUrl = `${req.protocol}://${req.get("host")}/saved?source=widget`;
   if (!userId) {
-    return res.json({
+    res.json({
       authRequired: true,
       template: "generic-template",
       data: { items: [], appUrl, message: "Sign in to see your digest" },
     });
+    return;
   }
   try {
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);

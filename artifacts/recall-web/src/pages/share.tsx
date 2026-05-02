@@ -1,4 +1,4 @@
-import { useGetSharedArticle } from "@workspace/api-client-react";
+import { useGetSharedArticle, getGetSharedArticleQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Brain, ExternalLink, Shield } from "lucide-react";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 export default function Share({ token }: { token: string }) {
   const { data: article, isLoading, error } = useGetSharedArticle(token, {
     query: {
+      queryKey: getGetSharedArticleQueryKey(token),
       enabled: !!token,
       retry: false
     }

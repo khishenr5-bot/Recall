@@ -48,7 +48,7 @@ export default function Highlights() {
     if (!acc[title]) acc[title] = [];
     acc[title].push(curr);
     return acc;
-  }, {} as Record<string, typeof highlights extends undefined ? never[] : typeof highlights>);
+  }, {} as Record<string, NonNullable<typeof highlights>>);
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-5xl space-y-10">
