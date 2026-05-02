@@ -12,7 +12,7 @@ function authFromQuery(req: any): number | null {
   return payload?.userId ?? null;
 }
 
-router.get("/widget/quick-save", async (req, res) => {
+router.get("/widget/quick-save", async (req, res): Promise<void> => {
   res.set("Cache-Control", "no-store");
   const userId = authFromQuery(req);
   const appUrl = `${req.protocol}://${req.get("host")}/?source=widget`;
@@ -39,7 +39,7 @@ router.get("/widget/quick-save", async (req, res) => {
   }
 });
 
-router.get("/widget/digest", async (req, res) => {
+router.get("/widget/digest", async (req, res): Promise<void> => {
   res.set("Cache-Control", "no-store");
   const userId = authFromQuery(req);
   const appUrl = `${req.protocol}://${req.get("host")}/saved?source=widget`;
