@@ -84,7 +84,7 @@ router.post("/teams/:id/invite", requireAuth, async (req, res): Promise<void> =>
 // POST /teams/join/:code
 router.post("/teams/join/:code", requireAuth, async (req, res): Promise<void> => {
   const user = (req as AuthRequest).user;
-  const code = req.params.code.toUpperCase();
+  const code = (req.params.code as string).toUpperCase();
   const [team] = await db.select().from(teamsTable).where(eq(teamsTable.inviteCode, code));
   if (!team) { res.status(404).json({ error: "Invalid invite code" }); return; }
 
